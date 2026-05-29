@@ -21,6 +21,9 @@ const PII_PATTERNS: { type: string; pattern: RegExp; weight: number }[] = [
   // Saudi National ID (10 digits starting with 1 or 2)
   { type: 'saudi_id', pattern: /\b[12]\d{9}\b/g, weight: 10 },
   
+  // Iqama / Resident ID (10 digits starting with 2)
+  { type: 'iqama', pattern: /\b(?:اقامة|إقامة|iqama)[\s#:]*2\d{9}\b/gi, weight: 10 },
+  
   // Saudi IBAN (SA followed by 22 characters)
   { type: 'saudi_iban', pattern: /\bSA\d{2}[A-Z0-9]{18}\b/gi, weight: 9 },
   
@@ -51,8 +54,17 @@ const PII_PATTERNS: { type: string; pattern: RegExp; weight: number }[] = [
   // Vehicle Plate Numbers (Saudi format)
   { type: 'vehicle_plate', pattern: /\b[A-Z]{3}\s*\d{4}\b/g, weight: 4 },
   
-  // Social Security / Tax ID patterns
-  { type: 'tax_id', pattern: /\b(?:الرقم الضريبي|VAT|TIN)[\s:]*\d{10,15}\b/gi, weight: 7 },
+  // VAT Number (15 digits starting with 3)
+  { type: 'vat_number', pattern: /\b(?:الرقم الضريبي|VAT|ضريبة)[\s#:]*3\d{14}\b/gi, weight: 8 },
+  
+  // Tax ID patterns (general)
+  { type: 'tax_id', pattern: /\b(?:TIN|Tax ID)[\s:]*\d{10,15}\b/gi, weight: 7 },
+  
+  // Commercial Registration (السجل التجاري - 10 digits)
+  { type: 'commercial_registration', pattern: /\b(?:السجل التجاري|CR|سجل تجاري)[\s#:]*\d{10}\b/gi, weight: 8 },
+  
+  // Employee Number / ID
+  { type: 'employee_id', pattern: /\b(?:رقم الموظف|Employee ID|EMP|موظف رقم)[\s#:]*[A-Z0-9]{4,12}\b/gi, weight: 6 },
   
   // Bank Account Numbers
   { type: 'bank_account', pattern: /\b(?:حساب|account)[\s#:]*\d{10,20}\b/gi, weight: 8 },
@@ -121,6 +133,7 @@ export function getPiiSummary(result: PIIResult): string {
   
   const typeLabels: Record<string, string> = {
     saudi_id: 'رقم الهوية السعودية',
+    iqama: 'رقم الإقامة',
     saudi_iban: 'رقم الآيبان',
     saudi_phone: 'رقم الجوال',
     email: 'البريد الإلكتروني',
@@ -131,7 +144,10 @@ export function getPiiSummary(result: PIIResult): string {
     arabic_name: 'اسم شخصي',
     medical_id: 'رقم الملف الطبي',
     vehicle_plate: 'لوحة المركبة',
+    vat_number: 'الرقم الضريبي VAT',
     tax_id: 'الرقم الضريبي',
+    commercial_registration: 'السجل التجاري',
+    employee_id: 'رقم الموظف',
     bank_account: 'رقم الحساب البنكي',
   };
   

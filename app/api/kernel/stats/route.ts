@@ -1,22 +1,35 @@
-import { getStorage } from '@/lib/in-memory-storage';
+import { getAllRequests } from '@/lib/kernel-engine';
+import { getProviderStats } from '@/lib/provider-gateway';
 
 export async function GET() {
   try {
-    const storage = getStorage();
-    const stats = storage.getStats();
+    const requests = getAllRequests();
+    const providerStats = getProviderStats();
+
+    const riskDistribution = calculateRiskDistribution(requests);
+    const piiDetectionRate = calculatePiiRate(requests);
+    
+    const statusBreakdown = {
+      pending: requests.filter(r => r.status === 'pending').length,
+      approved: requests.filter(r => r.approvalStatus === 'approved').length,
+      executed: requests.filter(r => r.approvalStatus === 'executed_after_approval').length,
+      completed: requests.filter(r => r.status === 'completed').length,
+    };
 
     return Response.json({
-      timestamp: Date.now(),
-      statistics: stats,
-      breakdown: {
-        pending: storage.getRequestsByStatus('pending').length,
-        approved: storage.getRequestsByStatus('approved').length,
-        executed: storage.getRequestsByStatus('executed_after_approval').length,
-        completed: storage.getRequestsByStatus('completed').length,
-        rejected: storage.getRequestsByStatus('rejected').length,
+      timestamp: new Date().toISOString(),
+      requests: {
+        total: requests.length,
+        ...statusBreakdown,
       },
-      riskDistribution: calculateRiskDistribution(storage.getAllRequests()),
-      piiDetectionRate: calculatePiiRate(storage.getAllRequests()),
+      provider: {
+        totalRequests: providerStats.totalRequests,
+        successfulRequests: providerStats.successfulRequests,
+        failedRequests: providerStats.failedRequests,
+        averageLatency: providerStats.averageLatency,
+      },
+      riskDistribution,
+      piiDetectionRate,
     });
   } catch (error) {
     console.error('[v0] Stats API error:', error);
@@ -30,12 +43,11 @@ function calculateRiskDistribution(requests: any[]) {
     high: 0,
     medium: 0,
     low: 0,
-    minimal: 0,
   };
 
   for (const req of requests) {
-    const level = req.riskAssessment?.riskLevel;
-    if (level && level in distribution) {
+    const level = req.riskAssessment?.level || 'low';
+    if (level in distribution) {
       distribution[level]++;
     }
   }
@@ -45,6 +57,6 @@ function calculateRiskDistribution(requests: any[]) {
 
 function calculatePiiRate(requests: any[]) {
   if (requests.length === 0) return 0;
-  const withPii = requests.filter((r) => r.piiMatches && r.piiMatches.length > 0).length;
+  const withPii = requests.filter((r) => r.piiResult?.hasPII).length;
   return Math.round((withPii / requests.length) * 100);
 }

@@ -1,29 +1,33 @@
-import { getAuditChain } from '@/lib/audit-chain';
+import { getAuditChain, verifyChain, getRecentBlocks } from '@/lib/audit-chain';
 
 export async function GET() {
   try {
     const auditChain = getAuditChain();
-
-    const verification = auditChain.verifyChain();
-    const entries = auditChain.getAllEntries();
+    const verification = verifyChain();
+    const entries = getRecentBlocks(100);
 
     return Response.json({
-      timestamp: Date.now(),
-      chainStatus: verification.isValid ? 'VALID' : 'BROKEN',
-      chainHash: auditChain.getChainHash(),
-      verification,
-      totalEntries: entries.length,
+      timestamp: new Date().toISOString(),
+      chainStatus: verification.valid ? 'VALID' : 'BROKEN',
+      chainHash: auditChain.lastHash,
+      verification: {
+        valid: verification.valid,
+        brokenAt: verification.brokenAt,
+      },
+      totalEntries: auditChain.blocks.length,
       entries: entries.map((entry) => ({
         id: entry.id,
         timestamp: entry.timestamp,
         action: entry.action,
-        actor: entry.actor,
-        requestId: entry.requestId,
-        hash: entry.hash.substring(0, 16) + '...',
-        previousHash: entry.previousHash.substring(0, 16) + '...',
+        index: entry.index,
+        hash: entry.hash.substring(0, 16),
+        previousHash: entry.previousHash.substring(0, 16),
         verified: true,
       })),
-      summary: auditChain.getSummary(),
+      summary: {
+        totalBlocks: auditChain.blocks.length,
+        chainValid: verification.valid,
+      },
     });
   } catch (error) {
     console.error('[v0] Chain API error:', error);
@@ -34,14 +38,15 @@ export async function GET() {
 export async function POST() {
   try {
     const auditChain = getAuditChain();
-    const verification = auditChain.verifyChain();
+    const verification = verifyChain();
 
     return Response.json({
-      timestamp: Date.now(),
-      verified: verification.isValid,
-      chainStatus: verification.isValid ? 'VALID' : 'BROKEN',
-      chainHash: auditChain.getChainHash(),
-      details: verification.details,
+      timestamp: new Date().toISOString(),
+      verified: verification.valid,
+      chainStatus: verification.valid ? 'VALID' : 'BROKEN',
+      chainHash: auditChain.lastHash,
+      brokenAt: verification.brokenAt,
+      totalBlocks: auditChain.blocks.length,
     });
   } catch (error) {
     console.error('[v0] Chain verification error:', error);

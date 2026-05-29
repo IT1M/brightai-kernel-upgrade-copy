@@ -11,6 +11,7 @@ export interface RiskAssessment {
   factors: string[];
   requiresApproval: boolean;
   autoApprove: boolean;
+  matchedRules?: Array<{ id: string; name: string; requiredApprovals: number }>;
 }
 
 export interface GovernanceRequest {
@@ -19,7 +20,8 @@ export interface GovernanceRequest {
   maskedMessage: string;
   piiResult: PIIResult;
   riskAssessment: RiskAssessment;
-  status: 'pending' | 'approved' | 'rejected' | 'auto-approved';
+  status: 'pending' | 'approved' | 'rejected' | 'auto-approved' | 'escalated';
+  approvalStatus?: string;
   createdAt: string;
   metadata?: Record<string, unknown>;
 }
@@ -54,6 +56,7 @@ const RISK_KEYWORDS = [
 
 export function assessRisk(message: string, piiResult: PIIResult): RiskAssessment {
   const factors: string[] = [];
+  const matchedRules: Array<{ id: string; name: string; requiredApprovals: number }> = [];
   let score = piiResult.riskScore;
   
   // Check for high-risk PII types
@@ -61,12 +64,14 @@ export function assessRisk(message: string, piiResult: PIIResult): RiskAssessmen
   if (hasHighRiskPII) {
     score += 25;
     factors.push('High-risk PII detected');
+    matchedRules.push({ id: 'high_risk_pii', name: 'High-Risk PII Policy', requiredApprovals: 2 });
   }
   
   // Check for multiple PII types
   if (piiResult.types.length > 2) {
     score += 15;
     factors.push('Multiple PII types');
+    matchedRules.push({ id: 'multi_pii', name: 'Multiple PII Types Policy', requiredApprovals: 1 });
   }
   
   // Check for risk keywords
@@ -105,6 +110,7 @@ export function assessRisk(message: string, piiResult: PIIResult): RiskAssessmen
     factors,
     requiresApproval,
     autoApprove,
+    matchedRules,
   };
 }
 

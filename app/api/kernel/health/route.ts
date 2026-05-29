@@ -1,34 +1,37 @@
-import { getGateway } from '@/lib/provider-gateway';
-import { getStorage } from '@/lib/in-memory-storage';
+import { getProviderHealth, getProviderStats } from '@/lib/provider-gateway';
 import { getAuditChain } from '@/lib/audit-chain';
 
 export async function GET() {
   try {
-    const gateway = getGateway();
-    const storage = getStorage();
+    const health = getProviderHealth();
+    const stats = getProviderStats();
     const auditChain = getAuditChain();
-
-    const stats = storage.getStats();
-    const providerStats = gateway.getProviderStats();
-    const chainSummary = auditChain.getSummary();
 
     return Response.json({
       status: 'operational',
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
       system: {
         uptime: 'running',
         version: '1.0.0',
         environment: process.env.NODE_ENV || 'development',
       },
-      requests: stats,
       provider: {
-        name: providerStats.currentProvider || 'demo',
-        model: providerStats.model || 'Demo Mode',
-        configured: providerStats.configured ?? false,
-        latencyMs: providerStats.averageLatency || 0,
+        name: health.provider,
+        model: health.model,
+        status: health.status,
+        configured: stats.configured,
+        averageLatency: stats.averageLatency,
       },
-      providers: providerStats,
-      auditChain: chainSummary,
+      stats: {
+        totalRequests: stats.totalRequests,
+        successfulRequests: stats.successfulRequests,
+        failedRequests: stats.failedRequests,
+      },
+      audit: {
+        totalBlocks: auditChain.blocks.length,
+        valid: true,
+        lastHash: auditChain.lastHash,
+      },
       governance: {
         totalRules: 13,
         systemReady: true,
