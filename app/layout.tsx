@@ -37,6 +37,8 @@ export const viewport = {
   userScalable: false,
   themeColor: '#0f172a',
 }
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
