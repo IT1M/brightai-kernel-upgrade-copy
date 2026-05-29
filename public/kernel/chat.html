@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <title>BrightAI Chat - Ask AI Safely</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0e27;
+      --card: #111827;
+      --accent: #00d9ff;
+      --purple: #7c3aed;
+      --danger: #dc2626;
+      --orange: #ea580c;
+      --text: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --border: #1e293b;
+    }
+
+    html, body {
+      background: linear-gradient(135deg, #0a0e27 0%, #0f172a 50%, #0a0e27 100%);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    input, textarea {
+      font-size: 16px !important;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 30px;
+    }
+
+    .header-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .nav-button {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      touch-action: manipulation;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 20px;
+    }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 400px;
+      max-height: 60vh;
+      padding: 20px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(0, 217, 255, 0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .message {
+      display: flex;
+      gap: 12px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message-content {
+      max-width: 70%;
+      padding: 12px 16px;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .message.user .message-content {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 500;
+    }
+
+    .message.system .message-content {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      color: var(--text);
+    }
+
+    .message.warning .message-content {
+      background: rgba(234, 88, 12, 0.1);
+      border: 1px solid rgba(234, 88, 12, 0.3);
+      color: #fdba74;
+    }
+
+    .message.error .message-content {
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      color: #fca5a5;
+    }
+
+    .typing-indicator {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: typing 1.4s infinite;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes typing {
+      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+      30% { opacity: 1; transform: translateY(-10px); }
+    }
+
+    .input-area {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .input-field {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      gap: 8px;
+    }
+
+    textarea {
+      flex: 1;
+      min-height: 60px;
+      max-height: 150px;
+      padding: 12px;
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: inherit;
+      resize: vertical;
+      -webkit-appearance: none;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      touch-action: manipulation;
+      font-size: 14px;
+    }
+
+    .btn-send {
+      background: var(--accent);
+      color: #0f172a;
+      min-width: 100px;
+    }
+
+    .btn-send:hover:not(:disabled) {
+      background: #007f99;
+      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-clear {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--border);
+      color: var(--accent);
+    }
+
+    .btn-clear:hover:not(:disabled) {
+      background: rgba(0, 217, 255, 0.2);
+    }
+
+    .status-bar {
+      background: rgba(0, 217, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.1);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .status-dot.warning {
+      background: var(--orange);
+    }
+
+    .status-dot.critical {
+      background: var(--danger);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 12px;
+      }
+
+      .messages {
+        max-height: 50vh;
+        min-height: 300px;
+        padding: 16px;
+      }
+
+      .message-content {
+        max-width: 85%;
+      }
+
+      .input-area {
+        flex-direction: column;
+      }
+
+      .input-field {
+        min-width: auto;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .status-bar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      textarea {
+        min-height: 80px;
+      }
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-secondary);
+      gap: 16px;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <a href="/" class="logo">🔐 BrightAI Kernel</a>
+      <div style="display: flex; gap: 12px;">
+        <a href="/kernel/stats.html" class="nav-button">Stats</a>
+        <a href="/kernel/approvals.html" class="nav-button">Approvals</a>
+        <a href="/kernel/audit.html" class="nav-button">Audit</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="chat-container">
+      <div class="messages" id="messages">
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <p>Start a new conversation</p>
+          <p style="font-size: 13px;">Your query will be analyzed for PII, risk-assessed, and processed through our governance pipeline.</p>
+        </div>
+      </div>
+
+      <div class="status-bar">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          System Status: <strong id="system-status">Ready</strong>
+        </div>
+        <div id="pending-count" style="display: none;">
+          <span class="status-dot warning"></span>
+          <strong id="pending-requests">0</strong> pending approvals
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-field">
+          <textarea id="query-input" placeholder="Ask me anything... (Your query will be analyzed for PII and processed through our governance pipeline)" aria-label="Enter your query"></textarea>
+          <button class="btn btn-send" id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+        <button class="btn btn-clear" id="clear-btn" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/kernel/js/api-client.js"></script>
+  <script src="/kernel/js/chat-ui.js"></script>
+  <script>
+    let isLoading = false;
+
+    async function sendMessage() {
+      const input = document.getElementById('query-input');
+      const query = input.value.trim();
+
+      if (!query || isLoading) return;
+
+      isLoading = true;
+      document.getElementById('send-btn').disabled = true;
+
+      addMessage(query, 'user');
+      input.value = '';
+
+      addTypingIndicator();
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, context: 'Enterprise governance request' })
+        });
+
+        const data = await response.json();
+        removeTypingIndicator();
+
+        if (data.status === 'pending_approval') {
+          addMessage(
+            `⚠️ Request flagged for review (Risk: ${data.riskLevel})\n\nMatched Rules: ${data.matchedRules.map(r => r.name).join(', ')}\n\nRequired Approvals: ${data.requiredApprovals}`,
+            'warning'
+          );
+        } else if (data.status === 'completed') {
+          addMessage(data.response, 'system');
+          addMessage(`✓ Completed | Provider: ${data.provider} | Tokens: ${data.tokensUsed}`, 'system');
+        } else {
+          addMessage('Error processing request', 'error');
+        }
+
+        updateSystemStatus();
+      } catch (error) {
+        removeTypingIndicator();
+        addMessage('Error: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+      } finally {
+        isLoading = false;
+        document.getElementById('send-btn').disabled = false;
+      }
+    }
+
+    function addMessage(text, type = 'system') {
+      const messagesDiv = document.getElementById('messages');
+      
+      if (messagesDiv.querySelector('.empty-state')) {
+        messagesDiv.innerHTML = '';
+      }
+
+      const messageEl = document.createElement('div');
+      messageEl.className = `message ${type}`;
+      messageEl.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
+      messagesDiv.appendChild(messageEl);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function addTypingIndicator() {
+      const messagesDiv = document.getElementById('messages');
+      const messageEl = document.createElement('div');
+      messageEl.className = 'message system';
+      messageEl.id = 'typing-indicator';
+      messageEl.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+      messagesDiv.appendChild(messageEl);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const indicator = document.getElementById('typing-indicator');
+      if (indicator) indicator.remove();
+    }
+
+    function clearChat() {
+      document.getElementById('messages').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">💬</div>
+          <p>Start a new conversation</p>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    async function updateSystemStatus() {
+      try {
+        const response = await fetch('/api/health');
+        const data = await response.json();
+        document.getElementById('system-status').textContent = data.status === 'operational' ? 'Operational' : 'Error';
+
+        const pendingCount = data.requests.pendingRequests;
+        const pendingDiv = document.getElementById('pending-count');
+        if (pendingCount > 0) {
+          document.getElementById('pending-requests').textContent = pendingCount;
+          pendingDiv.style.display = 'flex';
+        } else {
+          pendingDiv.style.display = 'none';
+        }
+      } catch (error) {
+        console.log('[v0] Failed to update status:', error);
+      }
+    }
+
+    document.getElementById('query-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        sendMessage();
+      }
+    });
+
+    updateSystemStatus();
+    setInterval(updateSystemStatus, 5000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "name": "BrightAI Kernel - Enterprise AI Governance",
+  "short_name": "BrightAI",
+  "description": "Enterprise AI governance platform for Saudi Arabia with PII detection, risk assessment, and audit trail compliance",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0a0e27",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='%2300d9ff' text-anchor='middle' dominant-baseline='central' font-family='Arial, sans-serif' font-weight='bold'>🔐</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%230f172a' width='512' height='512'/><text x='50%' y='50%' font-size='320' fill='%2300d9ff' text-anchor='middle' dominant-baseline='central' font-family='Arial, sans-serif' font-weight='bold'>🔐</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'><rect fill='%230a0e27' width='540' height='720'/><rect fill='%230f172a' y='60' width='540' height='600'/><text x='270' y='360' font-size='60' fill='%2300d9ff' text-anchor='middle' dominant-baseline='central' font-family='Arial, sans-serif'>BrightAI Kernel</text></svg>",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Chat",
+      "short_name": "Chat",
+      "description": "Start a new AI governance chat",
+      "url": "/kernel/chat.html",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%237c3aed' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='white' text-anchor='middle' dominant-baseline='central' font-family='Arial, sans-serif' font-weight='bold'>💬</text></svg>",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "View Dashboard",
+      "short_name": "Dashboard",
+      "description": "View system statistics and metrics",
+      "url": "/kernel/stats.html",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%2300d9ff' width='192' height='192'/><text x='50%' y='50%' font-size='120' fill='%230f172a' text-anchor='middle' dominant-baseline='central' font-family='Arial, sans-serif' font-weight='bold'>📊</text></svg>",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

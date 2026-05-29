@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <title>BrightAI Audit - Chain Verification</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0e27;
+      --card: #111827;
+      --accent: #00d9ff;
+      --danger: #dc2626;
+      --green: #10b981;
+      --text: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --border: #1e293b;
+    }
+
+    html, body {
+      background: linear-gradient(135deg, #0a0e27 0%, #0f172a 50%, #0a0e27 100%);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif;
+      min-height: 100vh;
+    }
+
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 30px;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .nav-button {
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    .chain-status {
+      background: rgba(15, 23, 42, 0.5);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .chain-status.invalid {
+      border-color: var(--danger);
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.invalid {
+      background: var(--danger);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .status-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .chain-hash {
+      background: rgba(0, 217, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: var(--text-secondary);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .summary-item {
+      background: rgba(0, 217, 255, 0.05);
+      border: 1px solid rgba(0, 217, 255, 0.1);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .summary-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .summary-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .audit-log {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(0, 217, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .log-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .log-entries {
+      max-height: 600px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .log-entry {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(0, 217, 255, 0.05);
+      font-size: 13px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .log-time {
+      color: var(--text-secondary);
+      font-family: monospace;
+      white-space: nowrap;
+    }
+
+    .log-action {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .log-details {
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .log-entry {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .log-time {
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <a href="/" class="logo">🔐 BrightAI Kernel</a>
+        <div style="display: flex; gap: 12px;">
+          <a href="/kernel/chat.html" class="nav-button">Chat</a>
+          <a href="/kernel/stats.html" class="nav-button">Stats</a>
+          <a href="/kernel/approvals.html" class="nav-button">Approvals</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <h1>Audit Chain Verification</h1>
+
+    <div class="chain-status" id="chain-status">
+      <div class="status-header">
+        <div class="status-indicator"></div>
+        <div class="status-title">Chain Status: <span id="status-text">Validating...</span></div>
+      </div>
+      <div style="margin-top: 16px;">
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Current Chain Hash</div>
+        <div class="chain-hash" id="chain-hash">Loading...</div>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <div class="summary-number" id="total-entries">0</div>
+        <div class="summary-label">Total Entries</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-number" id="action-count">0</div>
+        <div class="summary-label">Unique Actions</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-number" id="actor-count">0</div>
+        <div class="summary-label">Actors</div>
+      </div>
+    </div>
+
+    <div class="audit-log">
+      <div class="log-header">Audit Log (Latest 50 Entries)</div>
+      <div class="log-entries" id="log-entries">
+        <div class="loading">Loading audit log...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/kernel/js/api-client.js"></script>
+  <script>
+    async function loadAuditChain() {
+      try {
+        const response = await fetch('/api/chain');
+        const data = await response.json();
+
+        const statusEl = document.getElementById('chain-status');
+        const statusText = document.getElementById('status-text');
+        const indicator = statusEl.querySelector('.status-indicator');
+
+        if (data.chainStatus === 'VALID') {
+          statusText.textContent = 'VALID - Chain integrity verified';
+          indicator.classList.remove('invalid');
+        } else {
+          statusText.textContent = 'INVALID - Chain integrity compromised';
+          indicator.classList.add('invalid');
+          statusEl.classList.add('invalid');
+        }
+
+        document.getElementById('chain-hash').textContent = data.chainHash;
+        document.getElementById('total-entries').textContent = data.totalEntries;
+        document.getElementById('action-count').textContent = Object.keys(data.summary.actionTypes).length;
+        document.getElementById('actor-count').textContent = data.summary.actorCount;
+
+        const logEntries = document.getElementById('log-entries');
+        logEntries.innerHTML = data.entries.slice(0, 50).map(entry => `
+          <div class="log-entry">
+            <div class="log-time">${new Date(entry.timestamp).toLocaleTimeString()}</div>
+            <div style="grid-column: 2;">
+              <div class="log-action">${entry.action}</div>
+              <div class="log-details">${entry.requestId.substring(0, 20)}... • Actor: ${entry.actor}</div>
+            </div>
+            <div style="font-family: monospace; font-size: 11px; color: var(--text-secondary);">${entry.hash}</div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.log('[v0] Failed to load audit chain:', error);
+        document.getElementById('log-entries').innerHTML = '<div class="loading">Error loading audit chain</div>';
+      }
+    }
+
+    loadAuditChain();
+    setInterval(loadAuditChain, 5000);
+  </script>
+</body>
+</html>
