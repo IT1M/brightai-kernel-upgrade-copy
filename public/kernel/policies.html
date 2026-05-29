@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>السياسات | BrightAI Kernel</title>
+  <link rel="stylesheet" href="assets/css/kernel.css">
+  <style>
+    .policies-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+    }
+    @media (max-width: 1024px) {
+      .policies-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+    .policies-sidebar {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem;
+      height: fit-content;
+      position: sticky;
+      top: 1rem;
+    }
+    .policies-sidebar-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 0.5rem 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .policy-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+    }
+    .policy-nav-item:hover {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+    .policy-nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary-color);
+    }
+    .policy-nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .policy-content {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+    }
+    .policy-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .policy-title-section h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .policy-title-section p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+    .policy-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .policy-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .policy-btn.primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    .policy-btn.primary:hover {
+      background: var(--primary-hover);
+    }
+    .policy-btn.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .policy-btn.secondary:hover {
+      background: var(--bg-secondary);
+    }
+    .policy-body {
+      padding: 1.5rem;
+    }
+    .policy-section {
+      margin-bottom: 2rem;
+    }
+    .policy-section:last-child {
+      margin-bottom: 0;
+    }
+    .policy-section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .policy-section-title svg {
+      width: 18px;
+      height: 18px;
+      color: var(--primary-color);
+    }
+    .policy-rules {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .policy-rule {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border-right: 3px solid var(--primary-color);
+    }
+    .policy-rule-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--primary-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .policy-rule-icon svg {
+      width: 16px;
+      height: 16px;
+      color: var(--primary-color);
+    }
+    .policy-rule-content h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+    .policy-rule-content p {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .policy-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+    }
+    .policy-toggle-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .policy-toggle-info h4 {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--border-color);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-switch.active {
+      background: var(--primary-color);
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch.active::after {
+      transform: translateX(-20px);
+    }
+    .policy-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .policy-input-group label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .policy-input-group input,
+    .policy-input-group select {
+      padding: 0.625rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+    }
+    .policy-input-group input:focus,
+    .policy-input-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="kernel-layout">
+    <!-- Sidebar -->
+    <aside class="kernel-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="logo-text">BrightAI</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="themeToggle" title="تبديل المظهر">
+          <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="kernel-main">
+      <header class="main-header">
+        <button class="menu-toggle" id="menuToggle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>السياسات</h1>
+          <p>إدارة سياسات الحوكمة والتحكم في سلوك النظام</p>
+        </div>
+      </header>
+
+      <div class="main-content">
+        <div class="policies-layout">
+          <!-- Policies Navigation -->
+          <div class="policies-sidebar">
+            <div class="policies-sidebar-title">فئات السياسات</div>
+            <div class="policy-nav-item active" onclick="showPolicy('data-protection')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              حماية البيانات
+            </div>
+            <div class="policy-nav-item" onclick="showPolicy('access-control')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              التحكم في الوصول
+            </div>
+            <div class="policy-nav-item" onclick="showPolicy('content-moderation')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+              مراقبة المحتوى
+            </div>
+            <div class="policy-nav-item" onclick="showPolicy('audit-logging')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              سجلات التدقيق
+            </div>
+            <div class="policy-nav-item" onclick="showPolicy('rate-limiting')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              حدود الاستخدام
+            </div>
+            <div class="policy-nav-item" onclick="showPolicy('model-selection')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+              </svg>
+              اختيار النماذج
+            </div>
+          </div>
+
+          <!-- Policy Content -->
+          <div class="policy-content" id="policyContent">
+            <div class="policy-header">
+              <div class="policy-title-section">
+                <h2>سياسة حماية البيانات</h2>
+                <p>آخر تحديث: 1 يونيو 2024</p>
+              </div>
+              <div class="policy-actions">
+                <button class="policy-btn secondary">تصدير</button>
+                <button class="policy-btn primary">حفظ التغييرات</button>
+              </div>
+            </div>
+            <div class="policy-body">
+              <!-- PII Detection Section -->
+              <div class="policy-section">
+                <h3 class="policy-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                  كشف البيانات الشخصية (PII)
+                </h3>
+                <div class="policy-toggle">
+                  <div class="policy-toggle-info">
+                    <h4>تفعيل الكشف التلقائي عن PII</h4>
+                  </div>
+                  <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                </div>
+                <div class="policy-rules">
+                  <div class="policy-rule">
+                    <div class="policy-rule-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                    <div class="policy-rule-content">
+                      <h4>أرقام الهوية الوطنية</h4>
+                      <p>الكشف التلقائي عن أرقام الهوية السعودية ورقم الإقامة وجوازات السفر</p>
+                    </div>
+                  </div>
+                  <div class="policy-rule">
+                    <div class="policy-rule-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                    <div class="policy-rule-content">
+                      <h4>معلومات الاتصال</h4>
+                      <p>كشف أرقام الجوال والبريد الإلكتروني والعناوين</p>
+                    </div>
+                  </div>
+                  <div class="policy-rule">
+                    <div class="policy-rule-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                    <div class="policy-rule-content">
+                      <h4>البيانات المالية</h4>
+                      <p>كشف أرقام البطاقات الائتمانية والحسابات البنكية</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action on Detection -->
+              <div class="policy-section">
+                <h3 class="policy-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  الإجراء عند الكشف
+                </h3>
+                <div class="policy-input-group">
+                  <label>الإجراء الافتراضي</label>
+                  <select>
+                    <option value="block">حظر وإرسال للموافقات</option>
+                    <option value="mask">إخفاء البيانات تلقائياً</option>
+                    <option value="warn">تحذير فقط</option>
+                    <option value="log">تسجيل فقط</option>
+                  </select>
+                </div>
+                <div class="policy-toggle">
+                  <div class="policy-toggle-info">
+                    <h4>إرسال تنبيه للمشرف</h4>
+                  </div>
+                  <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                </div>
+                <div class="policy-toggle">
+                  <div class="policy-toggle-info">
+                    <h4>تسجيل في سجل التدقيق</h4>
+                  </div>
+                  <div class="toggle-switch active" onclick="this.classList.toggle('active')"></div>
+                </div>
+              </div>
+
+              <!-- Retention Settings -->
+              <div class="policy-section">
+                <h3 class="policy-section-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  إعدادات الاحتفاظ بالبيانات
+                </h3>
+                <div class="policy-input-group">
+                  <label>مدة الاحتفاظ بالسجلات</label>
+                  <select>
+                    <option value="30">30 يوم</option>
+                    <option value="90" selected>90 يوم</option>
+                    <option value="180">180 يوم</option>
+                    <option value="365">سنة</option>
+                    <option value="forever">دائم</option>
+                  </select>
+                </div>
+                <div class="policy-input-group">
+                  <label>مدة الاحتفاظ بالأدلة</label>
+                  <select>
+                    <option value="90">90 يوم</option>
+                    <option value="180">180 يوم</option>
+                    <option value="365" selected>سنة</option>
+                    <option value="730">سنتين</option>
+                    <option value="forever">دائم</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/kernel-utils.js"></script>
+  <script src="assets/js/kernel-nav.js"></script>
+  <script src="assets/js/kernel-api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.KernelNav) {
+        KernelNav.init('sidebarNav');
+        KernelNav.setActive('policies');
+      }
+      if (window.KernelUtils) {
+        KernelUtils.initTheme();
+      }
+    });
+
+    function showPolicy(policyId) {
+      // Update active state
+      document.querySelectorAll('.policy-nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+      
+      // In a real app, this would load the policy content
+      console.log('Loading policy:', policyId);
+    }
+
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      if (window.KernelUtils) {
+        KernelUtils.toggleTheme();
+      }
+    });
+  </script>
+</body>
+</html>

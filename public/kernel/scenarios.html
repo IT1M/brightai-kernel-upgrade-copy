@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>السيناريوهات | BrightAI Kernel</title>
+  <link rel="stylesheet" href="assets/css/kernel.css">
+  <style>
+    .scenarios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+    .scenario-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .scenario-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .scenario-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scenario-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .scenario-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .scenario-icon.blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .scenario-icon.green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .scenario-icon.orange { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+    .scenario-icon.red { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+    .scenario-icon.purple { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+    .scenario-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .scenario-status {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .scenario-status.active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    .scenario-status.inactive {
+      background: rgba(107, 114, 128, 0.15);
+      color: #6b7280;
+    }
+    .scenario-status.testing {
+      background: rgba(245, 158, 11, 0.15);
+      color: #f59e0b;
+    }
+    .scenario-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .scenario-body {
+      padding: 1.25rem 1.5rem;
+    }
+    .scenario-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .scenario-rules {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .scenario-rule {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+    }
+    .scenario-rule svg {
+      width: 14px;
+      height: 14px;
+      color: var(--primary-color);
+      flex-shrink: 0;
+    }
+    .scenario-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scenario-stats {
+      display: flex;
+      gap: 1rem;
+    }
+    .scenario-stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .stat-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .scenario-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .scenario-btn {
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .scenario-btn.primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    .scenario-btn.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .page-actions {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .add-btn {
+      padding: 0.625rem 1.25rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .add-btn:hover {
+      background: var(--primary-hover);
+    }
+  </style>
+</head>
+<body>
+  <div class="kernel-layout">
+    <!-- Sidebar -->
+    <aside class="kernel-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="logo-text">BrightAI</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="themeToggle" title="تبديل المظهر">
+          <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="kernel-main">
+      <header class="main-header">
+        <button class="menu-toggle" id="menuToggle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>السيناريوهات</h1>
+          <p>إدارة سيناريوهات الاستخدام والقواعد الخاصة بكل حالة</p>
+        </div>
+        <div class="header-actions">
+          <button class="add-btn" onclick="showAddModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            سيناريو جديد
+          </button>
+        </div>
+      </header>
+
+      <div class="main-content">
+        <!-- Scenarios Grid -->
+        <div class="scenarios-grid">
+          <!-- Scenario 1: PII Detection -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon red">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">كشف البيانات الشخصية</span>
+              </div>
+              <div class="scenario-status active">
+                <span class="scenario-status-dot"></span>
+                نشط
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">الكشف التلقائي عن البيانات الشخصية الحساسة (PII) في المدخلات والمخرجات وحجبها أو تنبيه المشرف.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  كشف أرقام الهوية الوطنية
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  كشف أرقام الجوال والبريد الإلكتروني
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  كشف البيانات المالية والبنكية
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">1,234</div>
+                  <div class="stat-label">تم الكشف</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">98%</div>
+                  <div class="stat-label">دقة</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">اختبار</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario 2: Financial Analysis -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon green">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">التحليل المالي</span>
+              </div>
+              <div class="scenario-status active">
+                <span class="scenario-status-dot"></span>
+                نشط
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">قواعد خاصة للتعامل مع طلبات التحليل المالي والتقارير المالية مع ضمان الدقة والامتثال.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  التحقق من صلاحيات المستخدم
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تسجيل جميع العمليات المالية
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  موافقة مشرف للمبالغ الكبيرة
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">456</div>
+                  <div class="stat-label">طلب</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">100%</div>
+                  <div class="stat-label">امتثال</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">اختبار</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario 3: HR Queries -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">استفسارات الموارد البشرية</span>
+              </div>
+              <div class="scenario-status active">
+                <span class="scenario-status-dot"></span>
+                نشط
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">التعامل مع استفسارات الموارد البشرية مع حماية خصوصية بيانات الموظفين.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  إخفاء الرواتب والمكافآت
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  حماية التقييمات السرية
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تقييد الوصول حسب الدور
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">789</div>
+                  <div class="stat-label">استفسار</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">95%</div>
+                  <div class="stat-label">رضا</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">اختبار</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario 4: Legal Documents -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">المستندات القانونية</span>
+              </div>
+              <div class="scenario-status testing">
+                <span class="scenario-status-dot"></span>
+                اختبار
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">تحليل ومراجعة المستندات القانونية مع ضمان السرية والامتثال للأنظمة.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تشفير المستندات الحساسة
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  موافقة قانونية مسبقة
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تتبع كامل للوصول
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">123</div>
+                  <div class="stat-label">مستند</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">87%</div>
+                  <div class="stat-label">دقة</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">اختبار</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario 5: Customer Support -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon orange">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">دعم العملاء</span>
+              </div>
+              <div class="scenario-status active">
+                <span class="scenario-status-dot"></span>
+                نشط
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">الرد على استفسارات العملاء مع الحفاظ على جودة الخدمة وحماية البيانات.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  التحقق من هوية العميل
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  عدم مشاركة بيانات حساسة
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تصعيد للدعم البشري عند الحاجة
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">2,345</div>
+                  <div class="stat-label">محادثة</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">92%</div>
+                  <div class="stat-label">رضا</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">اختبار</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scenario 6: Code Review -->
+          <div class="scenario-card">
+            <div class="scenario-header">
+              <div class="scenario-info">
+                <div class="scenario-icon blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                  </svg>
+                </div>
+                <span class="scenario-name">مراجعة الكود</span>
+              </div>
+              <div class="scenario-status inactive">
+                <span class="scenario-status-dot"></span>
+                غير نشط
+              </div>
+            </div>
+            <div class="scenario-body">
+              <p class="scenario-desc">مراجعة وتحليل الكود البرمجي مع ضمان عدم تسريب الأسرار والمفاتيح.</p>
+              <div class="scenario-rules">
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  كشف المفاتيح والأسرار
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  فحص الثغرات الأمنية
+                </div>
+                <div class="scenario-rule">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                  تسجيل جميع المراجعات
+                </div>
+              </div>
+            </div>
+            <div class="scenario-footer">
+              <div class="scenario-stats">
+                <div class="scenario-stat">
+                  <div class="stat-value">0</div>
+                  <div class="stat-label">مراجعة</div>
+                </div>
+                <div class="scenario-stat">
+                  <div class="stat-value">--</div>
+                  <div class="stat-label">دقة</div>
+                </div>
+              </div>
+              <div class="scenario-actions">
+                <button class="scenario-btn secondary">تعديل</button>
+                <button class="scenario-btn primary">تفعيل</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/kernel-utils.js"></script>
+  <script src="assets/js/kernel-nav.js"></script>
+  <script src="assets/js/kernel-api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.KernelNav) {
+        KernelNav.init('sidebarNav');
+        KernelNav.setActive('scenarios');
+      }
+      if (window.KernelUtils) {
+        KernelUtils.initTheme();
+      }
+    });
+
+    function showAddModal() {
+      alert('سيتم إضافة نافذة إنشاء السيناريو قريباً');
+    }
+
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      if (window.KernelUtils) {
+        KernelUtils.toggleTheme();
+      }
+    });
+  </script>
+</body>
+</html>

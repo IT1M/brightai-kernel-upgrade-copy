@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الموصلات | BrightAI Kernel</title>
+  <link rel="stylesheet" href="assets/css/kernel.css">
+  <style>
+    .connectors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .connector-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .connector-card:hover {
+      border-color: var(--primary-color);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .connector-card.connected {
+      border-color: #10b981;
+    }
+    .connector-header {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .connector-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .connector-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    .connector-logo.openai { background: #10a37f; color: white; }
+    .connector-logo.anthropic { background: #d4a574; color: white; }
+    .connector-logo.google { background: #4285f4; color: white; }
+    .connector-logo.azure { background: #0078d4; color: white; }
+    .connector-logo.aws { background: #ff9900; color: white; }
+    .connector-logo.cohere { background: #39594d; color: white; }
+    .connector-logo.mistral { background: #ff7000; color: white; }
+    .connector-logo.local { background: #6b7280; color: white; }
+    .connector-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .connector-provider {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+    .connector-status {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .connector-status.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+    .connector-status.disconnected {
+      background: rgba(107, 114, 128, 0.15);
+      color: #6b7280;
+    }
+    .connector-status.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+    .connector-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .connector-body {
+      padding: 1.25rem 1.5rem;
+    }
+    .connector-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .connector-models {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .connector-model {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+    .connector-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .connector-stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .stat-label {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .connector-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 0.5rem;
+    }
+    .connector-btn {
+      flex: 1;
+      padding: 0.5rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .connector-btn.primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    .connector-btn.primary:hover {
+      background: var(--primary-hover);
+    }
+    .connector-btn.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+    }
+    .connector-btn.secondary:hover {
+      background: var(--bg-secondary);
+    }
+    .connector-btn.danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .connector-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .add-connector-btn {
+      padding: 0.625rem 1.25rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .add-connector-btn:hover {
+      background: var(--primary-hover);
+    }
+    .available-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="kernel-layout">
+    <!-- Sidebar -->
+    <aside class="kernel-sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="logo-text">BrightAI</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <button class="theme-toggle" id="themeToggle" title="تبديل المظهر">
+          <svg class="sun-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg class="moon-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="kernel-main">
+      <header class="main-header">
+        <button class="menu-toggle" id="menuToggle">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18"/>
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>الموصلات</h1>
+          <p>إدارة اتصالات نماذج الذكاء الاصطناعي والخدمات الخارجية</p>
+        </div>
+        <div class="header-actions">
+          <button class="add-connector-btn" onclick="showAddModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            إضافة موصل
+          </button>
+        </div>
+      </header>
+
+      <div class="main-content">
+        <!-- Connected Section -->
+        <div class="section-header">
+          <h2 class="section-title">الموصلات النشطة</h2>
+        </div>
+        <div class="connectors-grid">
+          <!-- OpenAI Connector -->
+          <div class="connector-card connected">
+            <div class="connector-header">
+              <div class="connector-info">
+                <div class="connector-logo openai">GPT</div>
+                <div>
+                  <div class="connector-name">OpenAI</div>
+                  <div class="connector-provider">GPT-4, GPT-3.5</div>
+                </div>
+              </div>
+              <div class="connector-status connected">
+                <span class="connector-status-dot"></span>
+                متصل
+              </div>
+            </div>
+            <div class="connector-body">
+              <p class="connector-desc">نماذج OpenAI للمحادثة والتحليل وتوليد النصوص مع دعم الوظائف والأدوات.</p>
+              <div class="connector-models">
+                <span class="connector-model">gpt-4-turbo</span>
+                <span class="connector-model">gpt-4</span>
+                <span class="connector-model">gpt-3.5-turbo</span>
+              </div>
+              <div class="connector-stats">
+                <div class="connector-stat">
+                  <div class="stat-value">12,345</div>
+                  <div class="stat-label">طلب</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">145ms</div>
+                  <div class="stat-label">متوسط</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">99.8%</div>
+                  <div class="stat-label">توفر</div>
+                </div>
+              </div>
+            </div>
+            <div class="connector-footer">
+              <button class="connector-btn secondary">إعدادات</button>
+              <button class="connector-btn danger">قطع الاتصال</button>
+            </div>
+          </div>
+
+          <!-- Anthropic Connector -->
+          <div class="connector-card connected">
+            <div class="connector-header">
+              <div class="connector-info">
+                <div class="connector-logo anthropic">CL</div>
+                <div>
+                  <div class="connector-name">Anthropic</div>
+                  <div class="connector-provider">Claude 3</div>
+                </div>
+              </div>
+              <div class="connector-status connected">
+                <span class="connector-status-dot"></span>
+                متصل
+              </div>
+            </div>
+            <div class="connector-body">
+              <p class="connector-desc">نماذج Claude للمحادثات الآمنة والتحليل المتقدم مع التركيز على السلامة.</p>
+              <div class="connector-models">
+                <span class="connector-model">claude-3-opus</span>
+                <span class="connector-model">claude-3-sonnet</span>
+                <span class="connector-model">claude-3-haiku</span>
+              </div>
+              <div class="connector-stats">
+                <div class="connector-stat">
+                  <div class="stat-value">8,721</div>
+                  <div class="stat-label">طلب</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">198ms</div>
+                  <div class="stat-label">متوسط</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">99.5%</div>
+                  <div class="stat-label">توفر</div>
+                </div>
+              </div>
+            </div>
+            <div class="connector-footer">
+              <button class="connector-btn secondary">إعدادات</button>
+              <button class="connector-btn danger">قطع الاتصال</button>
+            </div>
+          </div>
+
+          <!-- Azure OpenAI Connector -->
+          <div class="connector-card connected">
+            <div class="connector-header">
+              <div class="connector-info">
+                <div class="connector-logo azure">AZ</div>
+                <div>
+                  <div class="connector-name">Azure OpenAI</div>
+                  <div class="connector-provider">Microsoft Azure</div>
+                </div>
+              </div>
+              <div class="connector-status connected">
+                <span class="connector-status-dot"></span>
+                متصل
+              </div>
+            </div>
+            <div class="connector-body">
+              <p class="connector-desc">نماذج OpenAI مستضافة على Azure مع ضمانات أمان وامتثال إضافية.</p>
+              <div class="connector-models">
+                <span class="connector-model">gpt-4-azure</span>
+                <span class="connector-model">gpt-35-turbo</span>
+              </div>
+              <div class="connector-stats">
+                <div class="connector-stat">
+                  <div class="stat-value">5,432</div>
+                  <div class="stat-label">طلب</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">165ms</div>
+                  <div class="stat-label">متوسط</div>
+                </div>
+                <div class="connector-stat">
+                  <div class="stat-value">99.9%</div>
+                  <div class="stat-label">توفر</div>
+                </div>
+              </div>
+            </div>
+            <div class="connector-footer">
+              <button class="connector-btn secondary">إعدادات</button>
+              <button class="connector-btn danger">قطع الاتصال</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Available Connectors Section -->
+        <div class="available-section">
+          <div class="section-header">
+            <h2 class="section-title">موصلات متاحة</h2>
+          </div>
+          <div class="connectors-grid">
+            <!-- Google AI -->
+            <div class="connector-card">
+              <div class="connector-header">
+                <div class="connector-info">
+                  <div class="connector-logo google">G</div>
+                  <div>
+                    <div class="connector-name">Google AI</div>
+                    <div class="connector-provider">Gemini Pro</div>
+                  </div>
+                </div>
+                <div class="connector-status disconnected">
+                  <span class="connector-status-dot"></span>
+                  غير متصل
+                </div>
+              </div>
+              <div class="connector-body">
+                <p class="connector-desc">نماذج Google Gemini للمحادثة والتحليل متعدد الوسائط.</p>
+                <div class="connector-models">
+                  <span class="connector-model">gemini-pro</span>
+                  <span class="connector-model">gemini-pro-vision</span>
+                </div>
+              </div>
+              <div class="connector-footer">
+                <button class="connector-btn primary" style="width: 100%;">إعداد الاتصال</button>
+              </div>
+            </div>
+
+            <!-- AWS Bedrock -->
+            <div class="connector-card">
+              <div class="connector-header">
+                <div class="connector-info">
+                  <div class="connector-logo aws">AWS</div>
+                  <div>
+                    <div class="connector-name">AWS Bedrock</div>
+                    <div class="connector-provider">Amazon</div>
+                  </div>
+                </div>
+                <div class="connector-status disconnected">
+                  <span class="connector-status-dot"></span>
+                  غير متصل
+                </div>
+              </div>
+              <div class="connector-body">
+                <p class="connector-desc">وصول موحد لنماذج متعددة عبر خدمة AWS Bedrock.</p>
+                <div class="connector-models">
+                  <span class="connector-model">titan</span>
+                  <span class="connector-model">claude</span>
+                  <span class="connector-model">llama-2</span>
+                </div>
+              </div>
+              <div class="connector-footer">
+                <button class="connector-btn primary" style="width: 100%;">إعداد الاتصال</button>
+              </div>
+            </div>
+
+            <!-- Cohere -->
+            <div class="connector-card">
+              <div class="connector-header">
+                <div class="connector-info">
+                  <div class="connector-logo cohere">CO</div>
+                  <div>
+                    <div class="connector-name">Cohere</div>
+                    <div class="connector-provider">Command R+</div>
+                  </div>
+                </div>
+                <div class="connector-status disconnected">
+                  <span class="connector-status-dot"></span>
+                  غير متصل
+                </div>
+              </div>
+              <div class="connector-body">
+                <p class="connector-desc">نماذج Cohere للبحث الدلالي والتصنيف وتوليد النصوص.</p>
+                <div class="connector-models">
+                  <span class="connector-model">command-r-plus</span>
+                  <span class="connector-model">command-r</span>
+                  <span class="connector-model">embed</span>
+                </div>
+              </div>
+              <div class="connector-footer">
+                <button class="connector-btn primary" style="width: 100%;">إعداد الاتصال</button>
+              </div>
+            </div>
+
+            <!-- Mistral -->
+            <div class="connector-card">
+              <div class="connector-header">
+                <div class="connector-info">
+                  <div class="connector-logo mistral">M</div>
+                  <div>
+                    <div class="connector-name">Mistral AI</div>
+                    <div class="connector-provider">Mistral Large</div>
+                  </div>
+                </div>
+                <div class="connector-status disconnected">
+                  <span class="connector-status-dot"></span>
+                  غير متصل
+                </div>
+              </div>
+              <div class="connector-body">
+                <p class="connector-desc">نماذج Mistral الأوروبية مع التركيز على الكفاءة والأداء.</p>
+                <div class="connector-models">
+                  <span class="connector-model">mistral-large</span>
+                  <span class="connector-model">mistral-medium</span>
+                  <span class="connector-model">mistral-small</span>
+                </div>
+              </div>
+              <div class="connector-footer">
+                <button class="connector-btn primary" style="width: 100%;">إعداد الاتصال</button>
+              </div>
+            </div>
+
+            <!-- Local LLM -->
+            <div class="connector-card">
+              <div class="connector-header">
+                <div class="connector-info">
+                  <div class="connector-logo local">LO</div>
+                  <div>
+                    <div class="connector-name">نموذج محلي</div>
+                    <div class="connector-provider">Self-hosted</div>
+                  </div>
+                </div>
+                <div class="connector-status disconnected">
+                  <span class="connector-status-dot"></span>
+                  غير متصل
+                </div>
+              </div>
+              <div class="connector-body">
+                <p class="connector-desc">اتصال بنموذج مستضاف محلياً عبر API متوافق مع OpenAI.</p>
+                <div class="connector-models">
+                  <span class="connector-model">ollama</span>
+                  <span class="connector-model">llama.cpp</span>
+                  <span class="connector-model">vLLM</span>
+                </div>
+              </div>
+              <div class="connector-footer">
+                <button class="connector-btn primary" style="width: 100%;">إعداد الاتصال</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="assets/js/kernel-utils.js"></script>
+  <script src="assets/js/kernel-nav.js"></script>
+  <script src="assets/js/kernel-api.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.KernelNav) {
+        KernelNav.init('sidebarNav');
+        KernelNav.setActive('connectors');
+      }
+      if (window.KernelUtils) {
+        KernelUtils.initTheme();
+      }
+    });
+
+    function showAddModal() {
+      alert('سيتم إضافة نافذة إنشاء الموصل قريباً');
+    }
+
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('open');
+    });
+
+    document.getElementById('themeToggle')?.addEventListener('click', () => {
+      if (window.KernelUtils) {
+        KernelUtils.toggleTheme();
+      }
+    });
+  </script>
+</body>
+</html>
