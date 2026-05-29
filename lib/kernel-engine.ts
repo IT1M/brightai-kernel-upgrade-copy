@@ -62,7 +62,10 @@ export function createKernelRequest(
   
   const piiResult = detectPii(query);
   const maskedQuery = maskPii(query, piiResult);
-  const riskAssessment = assessRisk(query, piiResult);
+  const riskAssessment = assessRisk(query, piiResult, compliancePackage);
+  
+  // Check if request should be auto-blocked based on compliance package
+  const isBlocked = riskAssessment.autoBlocked === true;
   
   const request: KernelRequest = {
     id: requestId,
@@ -73,9 +76,10 @@ export function createKernelRequest(
     piiResult,
     riskAssessment,
     compliancePackage,
-    status: 'pending',
-    approvalStatus: shouldRequireApproval(riskAssessment) ? 'pending_approval' : 'approved',
+    status: isBlocked ? 'pending' : 'pending',
+    approvalStatus: isBlocked ? 'pending_approval' : (shouldRequireApproval(riskAssessment) ? 'pending_approval' : 'approved'),
     createdAt: Date.now(),
+    matchedPolicies: riskAssessment.factors,
   };
   
   requests.set(requestId, request);

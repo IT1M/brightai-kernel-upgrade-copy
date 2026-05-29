@@ -2,6 +2,7 @@
 // Risk assessment and approval workflow management
 
 import { PIIResult } from './pii-detection';
+import { getCompliancePackage, shouldAutoBlock, getRiskThreshold, type CompliancePackage } from './compliance-packages';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 
@@ -12,6 +13,9 @@ export interface RiskAssessment {
   requiresApproval: boolean;
   autoApprove: boolean;
   matchedRules?: Array<{ id: string; name: string; requiredApprovals: number }>;
+  compliancePackage?: string;
+  autoBlocked?: boolean;
+  autoBlockedTypes?: string[];
 }
 
 export interface GovernanceRequest {
@@ -20,7 +24,7 @@ export interface GovernanceRequest {
   maskedMessage: string;
   piiResult: PIIResult;
   riskAssessment: RiskAssessment;
-  status: 'pending' | 'approved' | 'rejected' | 'auto-approved' | 'escalated';
+  status: 'pending' | 'approved' | 'rejected' | 'auto-approved' | 'escalated' | 'blocked';
   approvalStatus?: string;
   createdAt: string;
   metadata?: Record<string, unknown>;
@@ -54,10 +58,24 @@ const RISK_KEYWORDS = [
   { pattern: /(?:API|key|مفتاح)/gi, weight: 8 },
 ];
 
-export function assessRisk(message: string, piiResult: PIIResult): RiskAssessment {
+export function assessRisk(message: string, piiResult: PIIResult, compliancePackageId = 'general'): RiskAssessment {
   const factors: string[] = [];
   const matchedRules: Array<{ id: string; name: string; requiredApprovals: number }> = [];
   let score = piiResult.riskScore;
+  
+  // Get compliance package configuration
+  const compliancePkg = getCompliancePackage(compliancePackageId);
+  const riskThreshold = getRiskThreshold(compliancePackageId);
+  
+  // Check for auto-blocked PII types based on compliance package
+  const autoBlockedTypes: string[] = [];
+  for (const piiType of piiResult.types) {
+    if (shouldAutoBlock(compliancePackageId, piiType)) {
+      autoBlockedTypes.push(piiType);
+    }
+  }
+  
+  const autoBlocked = autoBlockedTypes.length > 0;
   
   // Check for high-risk PII types
   const hasHighRiskPII = piiResult.types.some(type => HIGH_RISK_PII_TYPES.includes(type));
@@ -88,21 +106,44 @@ export function assessRisk(message: string, piiResult: PIIResult): RiskAssessmen
     factors.push('Long message');
   }
   
-  // Determine risk level
+  // Apply compliance package specific risk adjustments
+  if (autoBlocked) {
+    score = 100; // Max score for auto-blocked content
+    factors.push(`Auto-blocked PII types detected for ${compliancePkg.name}: ${autoBlockedTypes.join(', ')}`);
+    matchedRules.push({ 
+      id: 'compliance_auto_block', 
+      name: `${compliancePkg.fullNameAr} - حجب تلقائي`, 
+      requiredApprovals: 0 
+    });
+  }
+  
+  // Check if PII types are relevant to the compliance package
+  const relevantPiiTypes = piiResult.types.filter(type => compliancePkg.piiTypes.includes(type));
+  if (relevantPiiTypes.length > 0) {
+    score += relevantPiiTypes.length * 10;
+    factors.push(`Compliance-relevant PII detected: ${relevantPiiTypes.join(', ')}`);
+    matchedRules.push({ 
+      id: `${compliancePackageId}_pii`, 
+      name: `${compliancePkg.fullNameAr} - بيانات شخصية`, 
+      requiredApprovals: 1 
+    });
+  }
+  
+  // Determine risk level based on compliance package threshold
   let level: RiskLevel;
-  if (score >= RISK_THRESHOLDS.critical) {
+  if (score >= 85) {
     level = 'critical';
-  } else if (score >= RISK_THRESHOLDS.high) {
+  } else if (score >= riskThreshold + 30) {
     level = 'high';
-  } else if (score >= RISK_THRESHOLDS.medium) {
+  } else if (score >= riskThreshold) {
     level = 'medium';
   } else {
     level = 'low';
   }
   
   // Determine if approval is required
-  const requiresApproval = level === 'high' || level === 'critical' || hasHighRiskPII;
-  const autoApprove = level === 'low' && !piiResult.hasPII;
+  const requiresApproval = autoBlocked || level === 'high' || level === 'critical' || hasHighRiskPII;
+  const autoApprove = !autoBlocked && level === 'low' && !piiResult.hasPII;
   
   return {
     level,
@@ -111,6 +152,9 @@ export function assessRisk(message: string, piiResult: PIIResult): RiskAssessmen
     requiresApproval,
     autoApprove,
     matchedRules,
+    compliancePackage: compliancePackageId,
+    autoBlocked,
+    autoBlockedTypes: autoBlocked ? autoBlockedTypes : undefined,
   };
 }
 
