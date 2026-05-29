@@ -1,528 +1,1581 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f172a">
-  <title>BrightAI Chat - Ask AI Safely</title>
+  <meta name="theme-color" content="#030A18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>المحادثة الآمنة - نواة BrightAI</title>
+  <meta name="description" content="محادثة آمنة مع الذكاء الاصطناعي مع حماية البيانات الحساسة وتقييم المخاطر الفوري">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/kernel/assets/css/kernel.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    /* ── Chat Layout ── */
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 260px;
+      height: calc(100vh - 64px);
+      margin-top: 64px;
+      overflow: hidden;
     }
 
-    :root {
-      --bg: #0a0e27;
-      --card: #111827;
-      --accent: #00d9ff;
-      --purple: #7c3aed;
-      --danger: #dc2626;
-      --orange: #ea580c;
-      --text: #f1f5f9;
-      --text-secondary: #cbd5e1;
-      --border: #1e293b;
-    }
-
-    html, body {
-      background: linear-gradient(135deg, #0a0e27 0%, #0f172a 50%, #0a0e27 100%);
-      color: var(--text);
-      font-family: 'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    input, textarea {
-      font-size: 16px !important;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 20px;
-      width: 100%;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 30px;
-    }
-
-    .header-content {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--accent);
-      text-decoration: none;
-    }
-
-    .nav-button {
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      padding: 8px 16px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      cursor: pointer;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      touch-action: manipulation;
-    }
-
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      gap: 20px;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      min-height: 400px;
-      max-height: 60vh;
-      padding: 20px;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .message {
-      display: flex;
-      gap: 12px;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
+    @media (max-width: 1024px) {
+      .chat-layout {
+        grid-template-columns: 240px 1fr;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .message.user {
-      justify-content: flex-end;
-    }
-
-    .message-content {
-      max-width: 70%;
-      padding: 12px 16px;
-      border-radius: 8px;
-      line-height: 1.5;
-    }
-
-    .message.user .message-content {
-      background: var(--accent);
-      color: #0f172a;
-      font-weight: 500;
-    }
-
-    .message.system .message-content {
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      color: var(--text);
-    }
-
-    .message.warning .message-content {
-      background: rgba(234, 88, 12, 0.1);
-      border: 1px solid rgba(234, 88, 12, 0.3);
-      color: #fdba74;
-    }
-
-    .message.error .message-content {
-      background: rgba(220, 38, 38, 0.1);
-      border: 1px solid rgba(220, 38, 38, 0.3);
-      color: #fca5a5;
-    }
-
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-    }
-
-    .typing-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: typing 1.4s infinite;
-    }
-
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes typing {
-      0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
-      30% { opacity: 1; transform: translateY(-10px); }
-    }
-
-    .input-area {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .input-field {
-      flex: 1;
-      min-width: 200px;
-      display: flex;
-      gap: 8px;
-    }
-
-    textarea {
-      flex: 1;
-      min-height: 60px;
-      max-height: 150px;
-      padding: 12px;
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: inherit;
-      resize: vertical;
-      -webkit-appearance: none;
-    }
-
-    textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.1);
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-      touch-action: manipulation;
-      font-size: 14px;
-    }
-
-    .btn-send {
-      background: var(--accent);
-      color: #0f172a;
-      min-width: 100px;
-    }
-
-    .btn-send:hover:not(:disabled) {
-      background: #007f99;
-      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-    }
-
-    .btn-send:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-clear {
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid var(--border);
-      color: var(--accent);
-    }
-
-    .btn-clear:hover:not(:disabled) {
-      background: rgba(0, 217, 255, 0.2);
-    }
-
-    .status-bar {
-      background: rgba(0, 217, 255, 0.05);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .status-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-
-    .status-dot.warning {
-      background: var(--orange);
-    }
-
-    .status-dot.critical {
-      background: var(--danger);
+      .kernel-panel { display: none; }
     }
 
     @media (max-width: 768px) {
-      .container {
-        padding: 12px;
+      .chat-layout {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 64px - 60px);
       }
-
-      .messages {
-        max-height: 50vh;
-        min-height: 300px;
-        padding: 16px;
-      }
-
-      .message-content {
-        max-width: 85%;
-      }
-
-      .input-area {
-        flex-direction: column;
-      }
-
-      .input-field {
-        min-width: auto;
-      }
-
-      .btn {
-        width: 100%;
-      }
-
-      .status-bar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      textarea {
-        min-height: 80px;
-      }
+      .chat-sidebar { display: none; }
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px 20px;
+    /* ── Sidebar ── */
+    .chat-sidebar {
+      border-inline-end: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--ink-900);
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section {
+      padding: var(--space-3) var(--space-4);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .compliance-list {
+      padding: 0 var(--space-2);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .compliance-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      min-height: 44px;
+    }
+
+    .compliance-item:hover,
+    .compliance-item.active {
+      background: rgba(0, 212, 255, 0.08);
+    }
+
+    .compliance-item.active {
+      border-inline-start: 2px solid var(--brand);
+    }
+
+    .compliance-item-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: rgba(0, 212, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .compliance-item-icon svg {
+      width: 16px;
+      height: 16px;
+      color: var(--brand);
+    }
+
+    .compliance-item-text {
+      flex: 1;
+    }
+
+    .compliance-item-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .compliance-item-desc {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .provider-status-box {
+      margin: var(--space-4);
+      padding: var(--space-3);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-top: auto;
+    }
+
+    .provider-status-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.8125rem;
+    }
+
+    .provider-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-full);
+      background: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .provider-dot.active { background: var(--success); animation: pulseGlow 2s ease-in-out infinite; }
+    .provider-dot.demo { background: var(--warning); }
+
+    /* ── Chat Center ── */
+    .chat-center {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .chat-header-bar {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--ink-900);
+      flex-shrink: 0;
+    }
+
+    .chat-title {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid var(--border);
       color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      min-height: 44px;
+      min-width: 44px;
     }
 
-    .empty-state {
+    .icon-btn:hover {
+      background: rgba(0, 212, 255, 0.08);
+      color: var(--brand);
+      border-color: var(--border-hover);
+    }
+
+    .icon-btn svg { width: 18px; height: 18px; }
+
+    /* ── Messages Area ── */
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    /* Empty State */
+    .chat-empty {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
-      color: var(--text-secondary);
-      gap: 16px;
+      gap: var(--space-6);
+      padding: var(--space-8);
+      text-align: center;
     }
 
-    .empty-state-icon {
-      font-size: 48px;
-      opacity: 0.5;
+    .chat-empty-icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: var(--radius-xl);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--brand);
+    }
+
+    .chat-empty-icon svg { width: 32px; height: 32px; }
+
+    .chat-empty h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .chat-empty p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    /* Quick Examples */
+    .quick-examples {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    @media (max-width: 480px) {
+      .quick-examples { grid-template-columns: 1fr; }
+    }
+
+    .quick-example {
+      padding: var(--space-3) var(--space-4);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-align: start;
+      min-height: 44px;
+    }
+
+    .quick-example:hover {
+      border-color: var(--border-hover);
+      color: var(--text-primary);
+      background: var(--ink-700);
+    }
+
+    /* ── Message Bubbles ── */
+    .message {
+      display: flex;
+      gap: var(--space-3);
+      animation: fadeSlideUp 300ms ease-out;
+    }
+
+    .message.user-msg {
+      flex-direction: row-reverse;
+    }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-top: var(--space-1);
+    }
+
+    .msg-avatar.user-av {
+      background: var(--brand);
+      color: var(--ink-900);
+    }
+
+    .msg-avatar.ai-av {
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      color: var(--brand);
+    }
+
+    .msg-body { flex: 1; min-width: 0; max-width: 75%; }
+    .message.user-msg .msg-body { align-items: flex-end; display: flex; flex-direction: column; }
+
+    .user-bubble {
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      border-radius: var(--radius-lg) var(--radius-sm) var(--radius-lg) var(--radius-lg);
+      padding: var(--space-3) var(--space-4);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .ai-card {
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .ai-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+      background: var(--ink-700);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ai-card-provider {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .ai-card-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .copy-btn {
+      padding: var(--space-1) var(--space-2);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      font-size: 0.6875rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-height: 28px;
+    }
+
+    .copy-btn:hover { color: var(--brand); border-color: var(--brand); }
+    .copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+    .ai-card-content {
+      padding: var(--space-4);
+      font-size: 0.9375rem;
+      line-height: 1.7;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .blocked-bubble {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      font-size: 0.875rem;
+      color: var(--danger);
+    }
+
+    .blocked-bubble svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; }
+
+    .pending-bubble {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      font-size: 0.875rem;
+      color: var(--warning);
+    }
+
+    .pending-bubble svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; }
+    .pending-bubble a { color: var(--brand); text-decoration: underline; }
+
+    .msg-time {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      margin-top: var(--space-1);
+      padding-inline: var(--space-1);
+    }
+
+    /* Kernel Analysis Cards (within AI card) */
+    .kernel-analysis {
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border);
+      background: var(--ink-900);
+    }
+
+    .kernel-analysis-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      min-height: 32px;
+    }
+
+    .kernel-analysis-toggle:hover { color: var(--text-secondary); }
+
+    .kernel-analysis-toggle svg {
+      width: 14px;
+      height: 14px;
+      transition: transform var(--transition-fast);
+    }
+
+    .kernel-analysis-toggle.open svg { transform: rotate(180deg); }
+
+    .kernel-analysis-body {
+      display: none;
+      padding-top: var(--space-3);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .kernel-analysis-body.visible { display: flex; }
+
+    .risk-bar-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .risk-bar-label {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      width: 72px;
+      flex-shrink: 0;
+    }
+
+    .risk-bar-track {
+      flex: 1;
+      height: 6px;
+      background: var(--ink-700);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 600ms ease-out;
+    }
+
+    .risk-bar-value {
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: 36px;
+      text-align: end;
+    }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .chip-pii {
+      padding: 2px var(--space-2);
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-full);
+      font-size: 0.6875rem;
+      color: var(--danger);
+    }
+
+    .chip-policy {
+      padding: 2px var(--space-2);
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: var(--radius-full);
+      font-size: 0.6875rem;
+      color: var(--warning);
+    }
+
+    .kernel-meta-row {
+      display: flex;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .kernel-hash {
+      font-family: monospace;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: color var(--transition-fast);
+    }
+
+    .kernel-hash:hover { color: var(--brand); }
+
+    /* Loading Dots */
+    .loading-msg .ai-card-content {
+      padding: var(--space-3) var(--space-4);
+    }
+
+    /* ── Input Bar ── */
+    .input-bar {
+      padding: var(--space-3) var(--space-4);
+      border-top: 1px solid var(--border);
+      background: var(--ink-900);
+      flex-shrink: 0;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      gap: var(--space-3);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-3) var(--space-3);
+      transition: border-color var(--transition-fast);
+    }
+
+    .input-wrapper:focus-within {
+      border-color: rgba(0, 212, 255, 0.4);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.06);
+    }
+
+    #chat-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: none;
+      min-height: 24px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    #chat-input::placeholder { color: var(--text-tertiary); }
+
+    .input-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: var(--space-2);
+    }
+
+    .char-counter {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .char-counter.warn { color: var(--danger); font-weight: 600; }
+
+    .input-hint {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .send-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--brand);
+      border: none;
+      color: var(--ink-900);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all var(--transition-fast);
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: var(--brand-light);
+      box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .send-btn svg { width: 18px; height: 18px; }
+
+    /* Pending Banner */
+    .pending-banner {
+      margin: 0 var(--space-4) var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: 0.875rem;
+      color: var(--warning);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .pending-banner svg { flex-shrink: 0; width: 18px; height: 18px; }
+    .pending-banner a { color: var(--brand); }
+
+    /* ── Right Kernel Panel ── */
+    .kernel-panel {
+      border-inline-start: 1px solid var(--border);
+      overflow-y: auto;
+      background: var(--ink-900);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .panel-section {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: var(--space-3);
+    }
+
+    .panel-placeholder {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: var(--space-4) 0;
+    }
+
+    .decision-badge-large {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .decision-badge-large.allowed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
+    .decision-badge-large.masked { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+    .decision-badge-large.blocked { background: rgba(239,68,68,0.08); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
+    .decision-badge-large.pending_approval { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+
+    .hash-display {
+      font-family: monospace;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      word-break: break-all;
+      background: var(--ink-800);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: color var(--transition-fast);
+    }
+
+    .hash-display:hover { color: var(--brand); }
+
+    /* Mobile settings btn */
+    .mobile-settings-btn {
+      display: none;
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      min-height: 44px;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    @media (max-width: 768px) {
+      .mobile-settings-btn { display: flex; }
+    }
+
+    /* Bottom Sheet for mobile */
+    .chat-bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: var(--ink-900);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      border-top: 1px solid var(--border);
+      transform: translateY(100%);
+      transition: transform var(--transition-base);
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+
+    .chat-bottom-sheet.open { transform: translateY(0); }
+
+    .bs-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--ink-600);
+      border-radius: var(--radius-full);
+      margin: var(--space-3) auto;
+    }
+
+    .bs-content {
+      padding: 0 var(--space-4) calc(var(--space-4) + var(--safe-area-bottom));
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-content">
-      <a href="/" class="logo">🔐 BrightAI Kernel</a>
-      <div style="display: flex; gap: 12px;">
-        <a href="/kernel/stats.html" class="nav-button">Stats</a>
-        <a href="/kernel/approvals.html" class="nav-button">Approvals</a>
-        <a href="/kernel/audit.html" class="nav-button">Audit</a>
-      </div>
-    </div>
-  </header>
+  <a href="#chat-input" class="skip-link">تخطي إلى الإدخال</a>
 
-  <div class="container">
-    <div class="chat-container">
-      <div class="messages" id="messages">
-        <div class="empty-state">
-          <div class="empty-state-icon">💬</div>
-          <p>Start a new conversation</p>
-          <p style="font-size: 13px;">Your query will be analyzed for PII, risk-assessed, and processed through our governance pipeline.</p>
-        </div>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- Chat Layout -->
+  <div class="chat-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="chat-sidebar" aria-label="إعدادات المحادثة">
+      <div class="sidebar-header">
+        <div style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:var(--space-2);">حزمة الامتثال</div>
+        <div id="selected-compliance-name" style="font-weight:600; font-size:1rem; color:var(--text-primary);">عام</div>
       </div>
 
-      <div class="status-bar">
-        <div class="status-indicator">
-          <span class="status-dot"></span>
-          System Status: <strong id="system-status">Ready</strong>
+      <div class="sidebar-section">حزم الامتثال</div>
+
+      <div class="compliance-list" id="compliance-list">
+        <div class="compliance-item active" data-pkg="general" onclick="selectCompliance(this,'general')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">عام</div>
+            <div class="compliance-item-desc">General</div>
+          </div>
         </div>
-        <div id="pending-count" style="display: none;">
-          <span class="status-dot warning"></span>
-          <strong id="pending-requests">0</strong> pending approvals
+        <div class="compliance-item" data-pkg="PDPL" onclick="selectCompliance(this,'PDPL')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">PDPL</div>
+            <div class="compliance-item-desc">حماية البيانات الشخصية</div>
+          </div>
+        </div>
+        <div class="compliance-item" data-pkg="NCA_ECC" onclick="selectCompliance(this,'NCA_ECC')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">NCA ECC</div>
+            <div class="compliance-item-desc">الأمن السيبراني</div>
+          </div>
+        </div>
+        <div class="compliance-item" data-pkg="SFDA" onclick="selectCompliance(this,'SFDA')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">SFDA</div>
+            <div class="compliance-item-desc">الصحة والدواء</div>
+          </div>
+        </div>
+        <div class="compliance-item" data-pkg="healthcare" onclick="selectCompliance(this,'healthcare')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">Healthcare</div>
+            <div class="compliance-item-desc">السجلات الطبية</div>
+          </div>
+        </div>
+        <div class="compliance-item" data-pkg="procurement" onclick="selectCompliance(this,'procurement')">
+          <div class="compliance-item-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div class="compliance-item-text">
+            <div class="compliance-item-name">Procurement</div>
+            <div class="compliance-item-desc">المناقصات والمشتريات</div>
+          </div>
         </div>
       </div>
 
-      <div class="input-area">
-        <div class="input-field">
-          <textarea id="query-input" placeholder="Ask me anything... (Your query will be analyzed for PII and processed through our governance pipeline)" aria-label="Enter your query"></textarea>
-          <button class="btn btn-send" id="send-btn" onclick="sendMessage()">Send</button>
+      <!-- Provider Status -->
+      <div class="provider-status-box">
+        <div class="provider-status-row">
+          <span class="provider-dot" id="sidebar-provider-dot"></span>
+          <span id="sidebar-provider-text" style="color:var(--text-secondary); font-size:0.8125rem;">جاري الفحص...</span>
         </div>
-        <button class="btn btn-clear" id="clear-btn" onclick="clearChat()">Clear</button>
+        <div id="sidebar-provider-model" style="font-size:0.6875rem; color:var(--text-tertiary); margin-top:var(--space-1); padding-inline-start:var(--space-4);"></div>
       </div>
+    </aside>
+
+    <!-- ── Center Chat ── -->
+    <main class="chat-center" id="main-content">
+      <div class="chat-header-bar">
+        <div class="chat-title">المحادثة الآمنة</div>
+        <div class="chat-actions">
+          <button class="mobile-settings-btn" id="mobile-settings-btn" aria-label="إعدادات الجلسة">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            الإعدادات
+          </button>
+          <button class="icon-btn" onclick="clearChat()" title="مسح المحادثة" aria-label="مسح المحادثة">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pending Banner (hidden by default) -->
+      <div class="pending-banner" id="pending-banner" style="display:none;" role="alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="pending-banner-text">لديك طلبات معلّقة بانتظار الموافقة.</span>
+        <a href="/kernel/approvals.html">مراجعة الموافقات</a>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-area" id="messages" aria-live="polite" aria-label="المحادثة">
+        <div class="chat-empty" id="empty-state">
+          <div class="chat-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+          </div>
+          <h3>ابدأ محادثة آمنة</h3>
+          <p>طلبك سيُحلَّل بحثاً عن البيانات الحساسة، ويُقيَّم للمخاطر، ويُعالَج عبر خط حوكمة البيانات.</p>
+          <div class="quick-examples" id="quick-examples">
+            <button class="quick-example" onclick="useExample(this)">حلّل تقرير المريض رقم MRN-12345 وأعطني ملخصاً</button>
+            <button class="quick-example" onclick="useExample(this)">ما هي شروط عقد المورد بقيمة 500,000 ريال؟</button>
+            <button class="quick-example" onclick="useExample(this)">اكتب خطاباً رسمياً لطلب اجتماع مع إدارة الموارد البشرية</button>
+            <button class="quick-example" onclick="useExample(this)">كيف أحسّن كفاءة عمليات المشتريات في مؤسستي؟</button>
+            <button class="quick-example" onclick="useExample(this)">هل رقم الهوية الوطنية 1234567890 مسجّل في النظام؟</button>
+            <button class="quick-example" onclick="useExample(this)">فسّر نتيجة فحص HbA1c 8.5% لمريض سكّري</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="input-bar">
+        <div class="input-wrapper">
+          <textarea
+            id="chat-input"
+            placeholder="اكتب رسالتك... (Ctrl+Enter للإرسال)"
+            rows="1"
+            maxlength="4000"
+            aria-label="حقل الرسالة"
+          ></textarea>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()" aria-label="إرسال">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-footer">
+          <span class="char-counter" id="char-counter">0 / 4000</span>
+          <span class="input-hint">Enter للسطر الجديد • Ctrl+Enter للإرسال</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- ── Right Kernel Panel ── -->
+    <aside class="kernel-panel" aria-label="لوحة تحليل النواة">
+      <div class="panel-section">
+        <div class="panel-section-title">تحليل النواة الحي</div>
+        <div id="panel-decision" class="panel-placeholder">في انتظار الرسالة...</div>
+      </div>
+
+      <div class="panel-section" id="panel-risk-section" style="display:none;">
+        <div class="panel-section-title">درجة المخاطر</div>
+        <div class="risk-bar-row">
+          <span class="risk-bar-label" id="panel-risk-label">منخفض</span>
+          <div class="risk-bar-track">
+            <div class="risk-bar-fill" id="panel-risk-bar" style="width:0%;background:var(--success);"></div>
+          </div>
+          <span class="risk-bar-value" id="panel-risk-value">0%</span>
+        </div>
+      </div>
+
+      <div class="panel-section" id="panel-pii-section" style="display:none;">
+        <div class="panel-section-title">البيانات الحساسة المكتشفة</div>
+        <div class="chips-row" id="panel-pii-chips"></div>
+      </div>
+
+      <div class="panel-section" id="panel-policies-section" style="display:none;">
+        <div class="panel-section-title">السياسات المطبّقة</div>
+        <div class="chips-row" id="panel-policies-chips"></div>
+      </div>
+
+      <div class="panel-section" id="panel-provider-section" style="display:none;">
+        <div class="panel-section-title">المزود والنموذج</div>
+        <div id="panel-provider-info" style="font-size:0.8125rem; color:var(--text-secondary);"></div>
+      </div>
+
+      <div class="panel-section" id="panel-hash-section" style="display:none;">
+        <div class="panel-section-title">هاش التدقيق</div>
+        <div class="hash-display" id="panel-hash" onclick="copyHash()" title="انقر للنسخ"></div>
+      </div>
+    </aside>
+
+  </div><!-- end .chat-layout -->
+
+  <!-- Mobile Bottom Sheet -->
+  <div class="chat-bottom-sheet" id="chat-bottom-sheet" aria-label="إعدادات الجلسة">
+    <div class="bs-handle"></div>
+    <div class="bs-content">
+      <div style="font-size:1rem; font-weight:600; margin-bottom:var(--space-4);">إعدادات الجلسة</div>
+
+      <div style="font-size:0.75rem; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:var(--space-3);">حزمة الامتثال</div>
+      <div id="bs-compliance-list" style="display:flex; flex-direction:column; gap:var(--space-2); margin-bottom:var(--space-4);"></div>
+
+      <div style="font-size:0.75rem; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:var(--space-3);">تحليل النواة</div>
+      <div id="bs-kernel-analysis" style="font-size:0.8125rem; color:var(--text-secondary);">في انتظار الرسالة...</div>
+
+      <button onclick="closeBottomSheet()" style="margin-top:var(--space-4); width:100%;" class="btn btn-ghost">إغلاق</button>
     </div>
   </div>
+  <div class="drawer-backdrop" id="bs-backdrop" onclick="closeBottomSheet()"></div>
 
-  <script src="/kernel/js/api-client.js"></script>
-  <script src="/kernel/js/chat-ui.js"></script>
+  <!-- Scripts -->
+  <script src="/kernel/assets/js/kernel-utils.js"></script>
+  <script src="/kernel/assets/js/kernel-api.js"></script>
+  <script src="/kernel/assets/js/kernel-nav.js"></script>
+  <script src="/kernel/assets/js/kernel-chat-client.js"></script>
+
   <script>
+    // ── State ──
+    let selectedCompliance = 'general';
     let isLoading = false;
+    let lastKernelData = null;
+    const MAX_CHARS = 4000;
+    const WARN_CHARS = 3800;
 
+    // ── Init ──
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSession();
+      checkProviderStatus();
+      checkPendingBanner();
+      setInterval(checkPendingBanner, 30000);
+      buildBottomSheetCompliance();
+    });
+
+    // ── Compliance Selection ──
+    function selectCompliance(el, pkg) {
+      document.querySelectorAll('.compliance-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      selectedCompliance = pkg;
+      document.getElementById('selected-compliance-name').textContent = el.querySelector('.compliance-item-name').textContent;
+      KernelUtils.storage.set('compliance', pkg);
+    }
+
+    function loadSession() {
+      const saved = KernelUtils.storage.get('compliance');
+      if (saved) {
+        const el = document.querySelector(`[data-pkg="${saved}"]`);
+        if (el) selectCompliance(el, saved);
+      }
+      const msgs = KernelUtils.storage.get('chatMessages');
+      if (msgs && Array.isArray(msgs) && msgs.length > 0) {
+        document.getElementById('empty-state').style.display = 'none';
+        msgs.forEach(m => renderStoredMessage(m));
+      }
+    }
+
+    // ── Send Message ──
     async function sendMessage() {
-      const input = document.getElementById('query-input');
+      const input = document.getElementById('chat-input');
       const query = input.value.trim();
-
       if (!query || isLoading) return;
+
+      input.value = '';
+      resizeTextarea(input);
+      updateCharCounter('');
+
+      hideEmptyState();
+      appendUserBubble(query);
+      const loadingId = appendLoadingDots();
 
       isLoading = true;
       document.getElementById('send-btn').disabled = true;
 
-      addMessage(query, 'user');
-      input.value = '';
-
-      addTypingIndicator();
-
       try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, context: 'Enterprise governance request' })
-        });
-
-        const data = await response.json();
-        removeTypingIndicator();
-
-        if (data.status === 'pending_approval') {
-          addMessage(
-            `⚠️ Request flagged for review (Risk: ${data.riskLevel})\n\nMatched Rules: ${data.matchedRules.map(r => r.name).join(', ')}\n\nRequired Approvals: ${data.requiredApprovals}`,
-            'warning'
-          );
-        } else if (data.status === 'completed') {
-          addMessage(data.response, 'system');
-          addMessage(`✓ Completed | Provider: ${data.provider} | Tokens: ${data.tokensUsed}`, 'system');
-        } else {
-          addMessage('Error processing request', 'error');
-        }
-
-        updateSystemStatus();
-      } catch (error) {
-        removeTypingIndicator();
-        addMessage('Error: ' + (error instanceof Error ? error.message : 'Unknown error'), 'error');
+        const data = await kernelAPI.chat(query, '', selectedCompliance);
+        removeLoadingDots(loadingId);
+        handleApiResponse(data, query);
+      } catch (err) {
+        removeLoadingDots(loadingId);
+        appendErrorBubble('تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+        showToast('خطأ في الاتصال', err.message || 'تعذر الإرسال', 'error');
       } finally {
         isLoading = false;
         document.getElementById('send-btn').disabled = false;
+        input.focus();
       }
     }
 
-    function addMessage(text, type = 'system') {
-      const messagesDiv = document.getElementById('messages');
-      
-      if (messagesDiv.querySelector('.empty-state')) {
-        messagesDiv.innerHTML = '';
+    function handleApiResponse(data, originalQuery) {
+      const decision = data.decision || data.status || 'allowed';
+      lastKernelData = data;
+      updateKernelPanel(data);
+
+      if (decision === 'blocked') {
+        appendBlockedBubble(data.reason || 'تم حظر الطلب بواسطة جدار الأمان.');
+        saveMessage({ type: 'blocked', content: data.reason, ts: Date.now() });
+      } else if (decision === 'pending_approval') {
+        appendPendingBubble(data.requestId, data.riskScore, data.matchedPolicies);
+        saveMessage({ type: 'pending', requestId: data.requestId, ts: Date.now() });
+      } else {
+        const response = data.response || data.text || '';
+        appendAiBubble(response, data);
+        saveMessage({ type: 'ai', content: response, meta: data, ts: Date.now() });
       }
 
-      const messageEl = document.createElement('div');
-      messageEl.className = `message ${type}`;
-      messageEl.innerHTML = `<div class="message-content">${escapeHtml(text)}</div>`;
-      messagesDiv.appendChild(messageEl);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      if (decision === 'pending_approval') {
+        checkPendingBanner();
+      }
     }
 
-    function addTypingIndicator() {
-      const messagesDiv = document.getElementById('messages');
-      const messageEl = document.createElement('div');
-      messageEl.className = 'message system';
-      messageEl.id = 'typing-indicator';
-      messageEl.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
-      messagesDiv.appendChild(messageEl);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // ── Append Messages ──
+    function hideEmptyState() {
+      const es = document.getElementById('empty-state');
+      if (es) es.style.display = 'none';
     }
 
-    function removeTypingIndicator() {
-      const indicator = document.getElementById('typing-indicator');
-      if (indicator) indicator.remove();
-    }
-
-    function clearChat() {
-      document.getElementById('messages').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">💬</div>
-          <p>Start a new conversation</p>
+    function appendUserBubble(text) {
+      const id = KernelUtils.generateId('msg');
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message user-msg';
+      el.id = id;
+      el.innerHTML = `
+        <div class="msg-avatar user-av" aria-hidden="true">أ</div>
+        <div class="msg-body">
+          <div class="user-bubble">${KernelUtils.escapeHtml(text)}</div>
+          <div class="msg-time">${KernelUtils.formatRelativeTime(new Date())}</div>
         </div>
+      `;
+      msgs.appendChild(el);
+      scrollBottom();
+      saveMessage({ type: 'user', content: text, ts: Date.now() });
+      return id;
+    }
+
+    function appendLoadingDots() {
+      const id = KernelUtils.generateId('loading');
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message loading-msg';
+      el.id = id;
+      el.innerHTML = `
+        <div class="msg-avatar ai-av" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="ai-card">
+            <div class="ai-card-content">
+              <div class="typing-dots" aria-label="جاري المعالجة">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      msgs.appendChild(el);
+      scrollBottom();
+      return id;
+    }
+
+    function removeLoadingDots(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    function appendAiBubble(text, data) {
+      const id = KernelUtils.generateId('msg');
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message';
+      el.id = id;
+
+      const provider = data.provider || 'النواة';
+      const model = data.model || '';
+      const latency = data.latencyMs ? `${data.latencyMs}ms` : '';
+      const hash = data.auditHash || data.hash || '';
+      const riskScore = data.riskScore || 0;
+      const piiItems = data.piiDetected || [];
+      const policies = data.matchedPolicies || [];
+      const decision = data.decision || 'allowed';
+
+      const riskColor = riskScore < 30 ? 'var(--success)' : riskScore < 60 ? 'var(--warning)' : 'var(--danger)';
+
+      el.innerHTML = `
+        <div class="msg-avatar ai-av" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="ai-card">
+            <div class="ai-card-header">
+              <div class="ai-card-provider">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+                <span>${KernelUtils.escapeHtml(provider)}${model ? ' · ' + KernelUtils.escapeHtml(model) : ''}${latency ? ' · ' + latency : ''}</span>
+                <span class="badge ${KernelUtils.getDecisionClass(decision)}" style="font-size:0.6rem; padding:1px 6px;">${KernelUtils.getDecisionLabel(decision)}</span>
+              </div>
+              <div class="ai-card-actions">
+                <button class="copy-btn" onclick="copyMsg(this, '${id}')" aria-label="نسخ الرد">نسخ</button>
+              </div>
+            </div>
+            <div class="ai-card-content" id="content-${id}"></div>
+            ${(piiItems.length > 0 || policies.length > 0 || hash) ? `
+            <div class="kernel-analysis">
+              <div class="kernel-analysis-toggle" onclick="toggleAnalysis(this)" aria-expanded="false" role="button" tabindex="0">
+                <span>تفاصيل تحليل النواة</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
+              </div>
+              <div class="kernel-analysis-body">
+                <div class="risk-bar-row">
+                  <span class="risk-bar-label">المخاطر</span>
+                  <div class="risk-bar-track">
+                    <div class="risk-bar-fill" style="width:${riskScore}%; background:${riskColor};"></div>
+                  </div>
+                  <span class="risk-bar-value" style="color:${riskColor};">${riskScore}%</span>
+                </div>
+                ${piiItems.length > 0 ? `
+                <div>
+                  <div style="font-size:0.6875rem; color:var(--text-tertiary); margin-bottom:var(--space-1);">PII مكتشف</div>
+                  <div class="chips-row">${piiItems.map(p => `<span class="chip-pii">${KernelUtils.escapeHtml(typeof p === 'string' ? p : p.type || p)}</span>`).join('')}</div>
+                </div>` : ''}
+                ${policies.length > 0 ? `
+                <div>
+                  <div style="font-size:0.6875rem; color:var(--text-tertiary); margin-bottom:var(--space-1);">السياسات</div>
+                  <div class="chips-row">${policies.map(p => `<span class="chip-policy">${KernelUtils.escapeHtml(typeof p === 'string' ? p : p.name || p)}</span>`).join('')}</div>
+                </div>` : ''}
+                ${hash ? `<div class="kernel-hash" onclick="KernelUtils.copyToClipboard('${hash}').then(()=>showToast('تم النسخ','','success'))" title="انقر للنسخ">هاش: ${hash.substring(0, 16)}...</div>` : ''}
+              </div>
+            </div>` : ''}
+          </div>
+          <div class="msg-time">${KernelUtils.formatRelativeTime(new Date())}</div>
+        </div>
+      `;
+
+      msgs.appendChild(el);
+      scrollBottom();
+
+      // Typewriter effect
+      const contentEl = document.getElementById(`content-${id}`);
+      if (contentEl) {
+        if (text.length > 500) {
+          contentEl.textContent = text;
+        } else {
+          typeText(contentEl, text);
+        }
+      }
+    }
+
+    function appendBlockedBubble(reason) {
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message';
+      el.innerHTML = `
+        <div class="msg-avatar ai-av" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="blocked-bubble" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+            </svg>
+            <span>${KernelUtils.escapeHtml(reason)}</span>
+          </div>
+          <div class="msg-time">${KernelUtils.formatRelativeTime(new Date())}</div>
+        </div>
+      `;
+      msgs.appendChild(el);
+      scrollBottom();
+    }
+
+    function appendPendingBubble(requestId, riskScore, policies) {
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message';
+      const policiesText = policies && policies.length > 0 ? policies.map(p => typeof p === 'string' ? p : p.name || p).join('، ') : 'مخاطر مرتفعة';
+      el.innerHTML = `
+        <div class="msg-avatar ai-av" aria-hidden="true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="msg-body">
+          <div class="pending-bubble" role="status">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>
+              تم تعليق الطلب لمراجعة الحوكمة. درجة المخاطر: <strong>${riskScore || '—'}%</strong>. السبب: ${KernelUtils.escapeHtml(policiesText)}.
+              <br><a href="/kernel/approvals.html">مراجعة الموافقات والتنفيذ</a>
+            </span>
+          </div>
+          <div class="msg-time">${KernelUtils.formatRelativeTime(new Date())}</div>
+        </div>
+      `;
+      msgs.appendChild(el);
+      scrollBottom();
+    }
+
+    function appendErrorBubble(text) {
+      const msgs = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = 'message';
+      el.innerHTML = `
+        <div class="msg-body">
+          <div class="blocked-bubble">${KernelUtils.escapeHtml(text)}</div>
+        </div>
+      `;
+      msgs.appendChild(el);
+      scrollBottom();
+    }
+
+    function renderStoredMessage(m) {
+      if (m.type === 'user') appendUserBubble(m.content);
+      else if (m.type === 'ai') appendAiBubble(m.content, m.meta || {});
+      else if (m.type === 'blocked') appendBlockedBubble(m.content);
+      else if (m.type === 'pending') appendPendingBubble(m.requestId, null, []);
+    }
+
+    // ── Typewriter ──
+    function typeText(el, text, speed = 22) {
+      let i = 0;
+      el.textContent = '';
+      const msgs = document.getElementById('messages');
+      function tick() {
+        if (i < text.length) {
+          el.textContent += text[i++];
+          msgs.scrollTop = msgs.scrollHeight;
+          setTimeout(tick, speed);
+        }
+      }
+      tick();
+    }
+
+    // ── Kernel Panel Update ──
+    function updateKernelPanel(data) {
+      const decision = data.decision || data.status || 'allowed';
+      const riskScore = data.riskScore || 0;
+      const piiItems = data.piiDetected || [];
+      const policies = data.matchedPolicies || [];
+      const provider = data.provider || '';
+      const model = data.model || '';
+      const latency = data.latencyMs || '';
+      const hash = data.auditHash || data.hash || '';
+
+      const riskColor = riskScore < 30 ? 'var(--success)' : riskScore < 60 ? 'var(--warning)' : 'var(--danger)';
+
+      // Decision
+      const decEl = document.getElementById('panel-decision');
+      decEl.innerHTML = `<div class="decision-badge-large ${decision}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        ${KernelUtils.getDecisionLabel(decision)}
+      </div>`;
+
+      // Risk
+      document.getElementById('panel-risk-section').style.display = '';
+      document.getElementById('panel-risk-label').textContent = KernelUtils.getRiskLabel(data.riskLevel || 'low');
+      document.getElementById('panel-risk-bar').style.width = riskScore + '%';
+      document.getElementById('panel-risk-bar').style.background = riskColor;
+      document.getElementById('panel-risk-value').textContent = riskScore + '%';
+      document.getElementById('panel-risk-value').style.color = riskColor;
+
+      // PII
+      if (piiItems.length > 0) {
+        document.getElementById('panel-pii-section').style.display = '';
+        document.getElementById('panel-pii-chips').innerHTML = piiItems.map(p =>
+          `<span class="chip-pii">${KernelUtils.escapeHtml(typeof p === 'string' ? p : p.type || p)}</span>`
+        ).join('');
+      }
+
+      // Policies
+      if (policies.length > 0) {
+        document.getElementById('panel-policies-section').style.display = '';
+        document.getElementById('panel-policies-chips').innerHTML = policies.map(p =>
+          `<span class="chip-policy">${KernelUtils.escapeHtml(typeof p === 'string' ? p : p.name || p)}</span>`
+        ).join('');
+      }
+
+      // Provider
+      if (provider) {
+        document.getElementById('panel-provider-section').style.display = '';
+        document.getElementById('panel-provider-info').innerHTML = `
+          <span style="color:var(--brand)">${KernelUtils.escapeHtml(provider)}</span>
+          ${model ? '<br><span style="font-size:0.75rem;">' + KernelUtils.escapeHtml(model) + '</span>' : ''}
+          ${latency ? '<br><span style="font-size:0.6875rem; color:var(--text-tertiary);">' + latency + 'ms</span>' : ''}
+        `;
+      }
+
+      // Hash
+      if (hash) {
+        document.getElementById('panel-hash-section').style.display = '';
+        document.getElementById('panel-hash').textContent = hash.substring(0, 24) + '...';
+        document.getElementById('panel-hash').dataset.full = hash;
+      }
+
+      // Update bottom sheet analysis
+      document.getElementById('bs-kernel-analysis').innerHTML = `
+        <div style="margin-bottom:var(--space-2);">القرار: <strong>${KernelUtils.getDecisionLabel(decision)}</strong></div>
+        <div>درجة المخاطر: <strong style="color:${riskColor}">${riskScore}%</strong></div>
       `;
     }
 
-    function escapeHtml(text) {
-      const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return text.replace(/[&<>"']/g, m => map[m]);
+    function copyHash() {
+      const el = document.getElementById('panel-hash');
+      const full = el.dataset.full || el.textContent;
+      KernelUtils.copyToClipboard(full).then(() => showToast('تم النسخ', 'تم نسخ هاش التدقيق', 'success'));
     }
 
-    async function updateSystemStatus() {
-      try {
-        const response = await fetch('/api/health');
-        const data = await response.json();
-        document.getElementById('system-status').textContent = data.status === 'operational' ? 'Operational' : 'Error';
+    function toggleAnalysis(toggleEl) {
+      const body = toggleEl.nextElementSibling;
+      const isOpen = body.classList.toggle('visible');
+      toggleEl.classList.toggle('open', isOpen);
+      toggleEl.setAttribute('aria-expanded', isOpen);
+    }
 
-        const pendingCount = data.requests.pendingRequests;
-        const pendingDiv = document.getElementById('pending-count');
-        if (pendingCount > 0) {
-          document.getElementById('pending-requests').textContent = pendingCount;
-          pendingDiv.style.display = 'flex';
-        } else {
-          pendingDiv.style.display = 'none';
-        }
-      } catch (error) {
-        console.log('[v0] Failed to update status:', error);
+    // ── Copy Message ──
+    async function copyMsg(btn, msgId) {
+      const contentEl = document.getElementById(`content-${msgId}`);
+      if (!contentEl) return;
+      const success = await KernelUtils.copyToClipboard(contentEl.textContent);
+      if (success) {
+        btn.textContent = 'تم';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'نسخ'; btn.classList.remove('copied'); }, 2000);
       }
     }
 
-    document.getElementById('query-input').addEventListener('keydown', (e) => {
+    // ── Clear Chat ──
+    function clearChat() {
+      if (!confirm('هل تريد مسح المحادثة؟')) return;
+      const msgs = document.getElementById('messages');
+      msgs.innerHTML = '';
+      msgs.appendChild(createEmptyState());
+      KernelUtils.storage.remove('chatMessages');
+      lastKernelData = null;
+      resetPanel();
+    }
+
+    function createEmptyState() {
+      const div = document.createElement('div');
+      div.className = 'chat-empty';
+      div.id = 'empty-state';
+      div.innerHTML = `
+        <div class="chat-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <h3>ابدأ محادثة آمنة</h3>
+        <p>طلبك سيُحلَّل بحثاً عن البيانات الحساسة، ويُقيَّم للمخاطر، ويُعالَج عبر خط حوكمة البيانات.</p>
+      `;
+      return div;
+    }
+
+    function resetPanel() {
+      document.getElementById('panel-decision').innerHTML = '<span style="color:var(--text-tertiary); font-size:0.8125rem;">في انتظار الرسالة...</span>';
+      ['panel-risk-section','panel-pii-section','panel-policies-section','panel-provider-section','panel-hash-section']
+        .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    }
+
+    // ── Provider Status ──
+    async function checkProviderStatus() {
+      try {
+        const data = await kernelAPI.getProviderStatus();
+        const dot = document.getElementById('sidebar-provider-dot');
+        const text = document.getElementById('sidebar-provider-text');
+        const model = document.getElementById('sidebar-provider-model');
+        if (data.configured) {
+          dot.className = 'provider-dot active';
+          text.textContent = data.provider + ' نشط';
+          model.textContent = data.model || '';
+        } else {
+          dot.className = 'provider-dot demo';
+          text.textContent = 'وضع تجريبي';
+          model.textContent = 'أضف NVIDIA_API_KEY للتفعيل';
+        }
+      } catch {}
+    }
+
+    // ── Pending Banner ──
+    async function checkPendingBanner() {
+      try {
+        const count = await kernelAPI.getPendingCount();
+        const banner = document.getElementById('pending-banner');
+        if (count > 0) {
+          document.getElementById('pending-banner-text').textContent = `لديك ${count} طلب${count > 1 ? 'ات' : ''} معلّق${count > 1 ? 'ة' : ''} بانتظار الموافقة.`;
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      } catch {}
+    }
+
+    // ── Session Storage ──
+    function saveMessage(msg) {
+      const msgs = KernelUtils.storage.get('chatMessages') || [];
+      msgs.push(msg);
+      if (msgs.length > 50) msgs.splice(0, msgs.length - 50);
+      KernelUtils.storage.set('chatMessages', msgs);
+    }
+
+    // ── Input ──
+    const chatInput = document.getElementById('chat-input');
+
+    chatInput.addEventListener('input', () => {
+      resizeTextarea(chatInput);
+      updateCharCounter(chatInput.value);
+    });
+
+    chatInput.addEventListener('keydown', e => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
         sendMessage();
       }
     });
 
-    updateSystemStatus();
-    setInterval(updateSystemStatus, 5000);
+    function resizeTextarea(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function updateCharCounter(val) {
+      const len = val.length;
+      const counter = document.getElementById('char-counter');
+      counter.textContent = `${len} / ${MAX_CHARS}`;
+      counter.classList.toggle('warn', len >= WARN_CHARS);
+    }
+
+    function useExample(btn) {
+      chatInput.value = btn.textContent.trim();
+      resizeTextarea(chatInput);
+      updateCharCounter(chatInput.value);
+      chatInput.focus();
+    }
+
+    // ── Utils ──
+    function scrollBottom() {
+      const msgs = document.getElementById('messages');
+      requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+    }
+
+    // ── Toast ──
+    function showToast(title, message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="${type === 'success' ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' : type === 'error' ? 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'}"/>
+        </svg>
+        <div class="toast-content">
+          ${title ? `<div class="toast-title">${KernelUtils.escapeHtml(title)}</div>` : ''}
+          ${message ? `<div class="toast-message">${KernelUtils.escapeHtml(message)}</div>` : ''}
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()" aria-label="إغلاق">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => { if (toast.parentElement) toast.remove(); }, 4000);
+    }
+
+    // ── Bottom Sheet (Mobile) ──
+    document.getElementById('mobile-settings-btn').addEventListener('click', openBottomSheet);
+
+    function buildBottomSheetCompliance() {
+      const list = document.getElementById('bs-compliance-list');
+      const items = document.querySelectorAll('.compliance-item');
+      items.forEach(item => {
+        const pkg = item.dataset.pkg;
+        const name = item.querySelector('.compliance-item-name').textContent;
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-ghost';
+        btn.style.width = '100%';
+        btn.style.justifyContent = 'flex-start';
+        btn.textContent = name;
+        btn.addEventListener('click', () => {
+          selectCompliance(item, pkg);
+          closeBottomSheet();
+        });
+        list.appendChild(btn);
+      });
+    }
+
+    function openBottomSheet() {
+      document.getElementById('chat-bottom-sheet').classList.add('open');
+      document.getElementById('bs-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBottomSheet() {
+      document.getElementById('chat-bottom-sheet').classList.remove('open');
+      document.getElementById('bs-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
   </script>
 </body>
 </html>

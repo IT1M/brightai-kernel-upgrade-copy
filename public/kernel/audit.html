@@ -1,338 +1,534 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f172a">
-  <title>BrightAI Audit - Chain Verification</title>
+  <meta name="theme-color" content="#030A18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>التدقيق - نواة BrightAI</title>
+  <meta name="description" content="سجل التدقيق والتحقق من سلامة السلسلة التشفيرية">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="/kernel/assets/css/kernel.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    .page-header {
+      padding: var(--space-8) 0 var(--space-6);
     }
 
-    :root {
-      --bg: #0a0e27;
-      --card: #111827;
-      --accent: #00d9ff;
-      --danger: #dc2626;
-      --green: #10b981;
-      --text: #f1f5f9;
-      --text-secondary: #cbd5e1;
-      --border: #1e293b;
-    }
-
-    html, body {
-      background: linear-gradient(135deg, #0a0e27 0%, #0f172a 50%, #0a0e27 100%);
-      color: var(--text);
-      font-family: 'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif;
-      min-height: 100vh;
-    }
-
-    input, textarea, select {
-      font-size: 16px !important;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    header {
-      padding: 20px 0;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 30px;
-    }
-
-    .header-content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 24px;
+    .page-header h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
       font-weight: 700;
-      color: var(--accent);
-      text-decoration: none;
+      margin-bottom: var(--space-2);
     }
 
-    .nav-button {
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      padding: 8px 16px;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      cursor: pointer;
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
     }
 
-    h1 {
-      font-size: 32px;
-      margin-bottom: 30px;
+    /* Chain Status */
+    .chain-status-card {
+      padding: var(--space-5);
+      margin-bottom: var(--space-6);
+      position: relative;
+      overflow: hidden;
     }
 
-    .chain-status {
-      background: rgba(15, 23, 42, 0.5);
-      border: 2px solid var(--accent);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 30px;
-      backdrop-filter: blur(10px);
+    .chain-status-card.valid {
+      border-color: rgba(16, 185, 129, 0.4);
     }
 
-    .chain-status.invalid {
-      border-color: var(--danger);
+    .chain-status-card.invalid {
+      border-color: rgba(239, 68, 68, 0.4);
     }
 
-    .status-header {
+    .chain-status-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
     }
 
-    .status-indicator {
+    .chain-pulse {
       width: 12px;
       height: 12px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 2s infinite;
+      border-radius: var(--radius-full);
+      flex-shrink: 0;
     }
 
-    .status-indicator.invalid {
+    .chain-pulse.valid {
+      background: var(--success);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    .chain-pulse.invalid {
       background: var(--danger);
+      animation: pulseGlow 2s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .status-title {
-      font-size: 18px;
+    .chain-title {
+      font-size: 1.0625rem;
       font-weight: 600;
     }
 
-    .chain-hash {
-      background: rgba(0, 217, 255, 0.05);
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      border-radius: 6px;
-      padding: 12px;
-      font-family: monospace;
-      font-size: 12px;
+    .chain-title.valid { color: var(--success); }
+    .chain-title.invalid { color: var(--danger); }
+
+    .chain-hash-label {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-2);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .chain-hash-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.8125rem;
+      color: var(--brand);
       word-break: break-all;
-      color: var(--text-secondary);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      transition: border-color var(--transition-fast);
+      display: block;
     }
 
-    .summary-grid {
+    .chain-hash-value:hover { border-color: var(--border-hover); }
+
+    /* Summary Stats */
+    .summary-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 30px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
     }
 
-    .summary-item {
-      background: rgba(0, 217, 255, 0.05);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-      border-radius: 8px;
-      padding: 16px;
+    @media (max-width: 640px) {
+      .summary-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    .summary-stat {
+      padding: var(--space-4);
       text-align: center;
     }
 
-    .summary-number {
-      font-size: 24px;
+    .summary-stat-value {
+      font-size: 2rem;
       font-weight: 700;
-      color: var(--accent);
-      margin-bottom: 4px;
+      color: var(--brand);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: var(--space-1);
     }
 
-    .summary-label {
-      font-size: 13px;
+    .summary-stat-label {
+      font-size: 0.8125rem;
       color: var(--text-secondary);
     }
 
-    .audit-log {
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-      border-radius: 12px;
+    /* Filters */
+    .filters-bar {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      margin-bottom: var(--space-5);
+      align-items: center;
+    }
+
+    .filter-btn {
+      padding: var(--space-2) var(--space-4);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      min-height: 44px;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .search-input-wrap {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-input-wrap svg {
+      position: absolute;
+      inset-inline-start: var(--space-3);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: var(--space-2) var(--space-4) var(--space-2) calc(var(--space-3) + 24px);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 0.875rem;
+      min-height: 44px;
+      transition: border-color var(--transition-fast);
+    }
+
+    [dir="rtl"] .search-input {
+      padding-inline-start: calc(var(--space-3) + 24px);
+      padding-inline-end: var(--space-4);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+
+    .search-input::placeholder { color: var(--text-tertiary); }
+
+    /* Audit Log */
+    .audit-log-card {
+      padding: 0;
       overflow: hidden;
-      backdrop-filter: blur(10px);
     }
 
-    .log-header {
-      padding: 16px;
-      border-bottom: 1px solid rgba(0, 217, 255, 0.1);
+    .audit-log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .audit-log-title {
+      font-size: 0.9375rem;
       font-weight: 600;
-      color: var(--accent);
     }
 
-    .log-entries {
+    .audit-log-count {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .audit-log-body {
       max-height: 600px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
     }
 
-    .log-entry {
-      padding: 12px 16px;
-      border-bottom: 1px solid rgba(0, 217, 255, 0.05);
-      font-size: 13px;
+    .audit-entry {
       display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 12px;
+      grid-template-columns: 120px auto 1fr auto;
+      gap: var(--space-3);
       align-items: center;
+      padding: var(--space-3) var(--space-5);
+      border-bottom: 1px solid rgba(0, 212, 255, 0.04);
+      transition: background var(--transition-fast);
+      font-size: 0.8125rem;
     }
 
-    .log-time {
-      color: var(--text-secondary);
-      font-family: monospace;
+    @media (max-width: 768px) {
+      .audit-entry {
+        grid-template-columns: 1fr;
+        gap: var(--space-1);
+      }
+    }
+
+    .audit-entry:hover {
+      background: rgba(0, 212, 255, 0.03);
+    }
+
+    .audit-entry:last-child {
+      border-bottom: none;
+    }
+
+    .audit-time {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
       white-space: nowrap;
     }
 
-    .log-action {
-      color: var(--accent);
-      font-weight: 600;
+    .audit-action-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
-    .log-details {
+    .audit-action-badge.chat { background: rgba(0, 212, 255, 0.12); color: var(--brand); }
+    .audit-action-badge.approve { background: var(--success-bg); color: var(--success); }
+    .audit-action-badge.reject { background: var(--danger-bg); color: var(--danger); }
+    .audit-action-badge.execute { background: rgba(167, 139, 250, 0.15); color: #A78BFA; }
+    .audit-action-badge.system { background: var(--info-bg); color: var(--info); }
+    .audit-action-badge.block { background: var(--danger-bg); color: var(--danger); }
+
+    .audit-details {
       color: var(--text-secondary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: var(--text-secondary);
+    .audit-details span.actor {
+      color: var(--brand);
+      font-weight: 500;
     }
 
-    @media (max-width: 768px) {
-      .container {
-        padding: 12px;
-      }
+    .audit-hash {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color var(--transition-fast);
+    }
 
-      h1 {
-        font-size: 24px;
-      }
+    .audit-hash:hover { color: var(--brand); }
 
-      .summary-grid {
-        grid-template-columns: 1fr;
-      }
+    .loading-entries {
+      padding: var(--space-8);
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 0.875rem;
+    }
 
-      .log-entry {
-        grid-template-columns: 1fr;
-        gap: 4px;
-      }
-
-      .log-time {
-        font-size: 12px;
-      }
+    .error-state {
+      padding: var(--space-8);
+      text-align: center;
+      color: var(--danger);
+      font-size: 0.875rem;
     }
   </style>
 </head>
 <body>
-  <header>
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <main id="main-content">
     <div class="container">
-      <div class="header-content">
-        <a href="/" class="logo">🔐 BrightAI Kernel</a>
-        <div style="display: flex; gap: 12px;">
-          <a href="/kernel/chat.html" class="nav-button">Chat</a>
-          <a href="/kernel/stats.html" class="nav-button">Stats</a>
-          <a href="/kernel/approvals.html" class="nav-button">Approvals</a>
+      <div class="page-header">
+        <h1>سجل التدقيق</h1>
+        <p>التحقق من سلامة السلسلة التشفيرية وتتبع جميع الأحداث</p>
+      </div>
+
+      <!-- Chain Status -->
+      <div class="glass-card chain-status-card" id="chain-status-card">
+        <div class="chain-status-header">
+          <div class="chain-pulse valid" id="chain-pulse"></div>
+          <div class="chain-title valid" id="chain-title">جاري التحقق من سلامة السلسلة...</div>
+        </div>
+        <div class="chain-hash-label">تجزئة السلسلة الحالية</div>
+        <div class="chain-hash-value" id="chain-hash" onclick="copyHash(this)" title="انقر للنسخ">
+          جاري التحميل...
         </div>
       </div>
+
+      <!-- Summary Stats -->
+      <div class="summary-row">
+        <div class="glass-card-flat summary-stat">
+          <div class="summary-stat-value" id="stat-total">—</div>
+          <div class="summary-stat-label">إجمالي السجلات</div>
+        </div>
+        <div class="glass-card-flat summary-stat">
+          <div class="summary-stat-value" id="stat-actions">—</div>
+          <div class="summary-stat-label">أنواع الإجراءات</div>
+        </div>
+        <div class="glass-card-flat summary-stat">
+          <div class="summary-stat-value" id="stat-actors">—</div>
+          <div class="summary-stat-label">الجهات الفاعلة</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar" role="group" aria-label="فلاتر السجل">
+        <button class="filter-btn active" data-action="all" onclick="setActionFilter(this,'all')">الكل</button>
+        <button class="filter-btn" data-action="chat" onclick="setActionFilter(this,'chat')">محادثة</button>
+        <button class="filter-btn" data-action="approve" onclick="setActionFilter(this,'approve')">موافقة</button>
+        <button class="filter-btn" data-action="reject" onclick="setActionFilter(this,'reject')">رفض</button>
+        <button class="filter-btn" data-action="execute" onclick="setActionFilter(this,'execute')">تنفيذ</button>
+        <button class="filter-btn" data-action="block" onclick="setActionFilter(this,'block')">حظر</button>
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="search" class="search-input" id="audit-search" placeholder="بحث في السجل..." oninput="filterEntries()">
+        </div>
+      </div>
+
+      <!-- Audit Log -->
+      <div class="glass-card audit-log-card">
+        <div class="audit-log-header">
+          <span class="audit-log-title">سجل الأحداث</span>
+          <span class="audit-log-count" id="entries-count">آخر 50 إدخالاً</span>
+        </div>
+        <div class="audit-log-body" id="audit-log-body" aria-label="سجل التدقيق">
+          <div class="loading-entries">جاري تحميل سجل التدقيق...</div>
+        </div>
+      </div>
+
     </div>
-  </header>
+  </main>
 
-  <div class="container">
-    <h1>Audit Chain Verification</h1>
+  <script src="/kernel/assets/js/kernel-utils.js"></script>
+  <script src="/kernel/assets/js/kernel-api.js"></script>
+  <script src="/kernel/assets/js/kernel-nav.js"></script>
 
-    <div class="chain-status" id="chain-status">
-      <div class="status-header">
-        <div class="status-indicator"></div>
-        <div class="status-title">Chain Status: <span id="status-text">Validating...</span></div>
-      </div>
-      <div style="margin-top: 16px;">
-        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">Current Chain Hash</div>
-        <div class="chain-hash" id="chain-hash">Loading...</div>
-      </div>
-    </div>
-
-    <div class="summary-grid">
-      <div class="summary-item">
-        <div class="summary-number" id="total-entries">0</div>
-        <div class="summary-label">Total Entries</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-number" id="action-count">0</div>
-        <div class="summary-label">Unique Actions</div>
-      </div>
-      <div class="summary-item">
-        <div class="summary-number" id="actor-count">0</div>
-        <div class="summary-label">Actors</div>
-      </div>
-    </div>
-
-    <div class="audit-log">
-      <div class="log-header">Audit Log (Latest 50 Entries)</div>
-      <div class="log-entries" id="log-entries">
-        <div class="loading">Loading audit log...</div>
-      </div>
-    </div>
-  </div>
-
-  <script src="/kernel/js/api-client.js"></script>
   <script>
+    let allEntries = [];
+    let currentActionFilter = 'all';
+
+    const ACTION_LABELS = {
+      'CHAT_REQUEST': { label: 'محادثة', cls: 'chat' },
+      'APPROVAL_REQUESTED': { label: 'طلب موافقة', cls: 'system' },
+      'APPROVED': { label: 'موافقة', cls: 'approve' },
+      'REJECTED': { label: 'رفض', cls: 'reject' },
+      'EXECUTED': { label: 'تنفيذ', cls: 'execute' },
+      'BLOCKED': { label: 'حظر', cls: 'block' },
+      'SYSTEM': { label: 'نظام', cls: 'system' },
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAuditChain();
+      setInterval(loadAuditChain, 30000);
+    });
+
     async function loadAuditChain() {
       try {
-        const response = await fetch('/api/chain');
-        const data = await response.json();
-
-        const statusEl = document.getElementById('chain-status');
-        const statusText = document.getElementById('status-text');
-        const indicator = statusEl.querySelector('.status-indicator');
-
-        if (data.chainStatus === 'VALID') {
-          statusText.textContent = 'VALID - Chain integrity verified';
-          indicator.classList.remove('invalid');
-        } else {
-          statusText.textContent = 'INVALID - Chain integrity compromised';
-          indicator.classList.add('invalid');
-          statusEl.classList.add('invalid');
-        }
-
-        document.getElementById('chain-hash').textContent = data.chainHash;
-        document.getElementById('total-entries').textContent = data.totalEntries;
-        document.getElementById('action-count').textContent = Object.keys(data.summary.actionTypes).length;
-        document.getElementById('actor-count').textContent = data.summary.actorCount;
-
-        const logEntries = document.getElementById('log-entries');
-        logEntries.innerHTML = data.entries.slice(0, 50).map(entry => `
-          <div class="log-entry">
-            <div class="log-time">${new Date(entry.timestamp).toLocaleTimeString()}</div>
-            <div style="grid-column: 2;">
-              <div class="log-action">${entry.action}</div>
-              <div class="log-details">${entry.requestId.substring(0, 20)}... • Actor: ${entry.actor}</div>
-            </div>
-            <div style="font-family: monospace; font-size: 11px; color: var(--text-secondary);">${entry.hash}</div>
-          </div>
-        `).join('');
-      } catch (error) {
-        console.log('[v0] Failed to load audit chain:', error);
-        document.getElementById('log-entries').innerHTML = '<div class="loading">Error loading audit chain</div>';
+        const data = await kernelAPI.getAuditChain();
+        renderChain(data);
+      } catch (err) {
+        console.log('[v0] Failed to load audit chain:', err);
+        renderChainError();
       }
     }
 
-    loadAuditChain();
-    setInterval(loadAuditChain, 5000);
+    function renderChain(data) {
+      const isValid = data.chainStatus === 'VALID';
+      const card = document.getElementById('chain-status-card');
+      const pulse = document.getElementById('chain-pulse');
+      const title = document.getElementById('chain-title');
+      const hash = document.getElementById('chain-hash');
+
+      card.className = `glass-card chain-status-card ${isValid ? 'valid' : 'invalid'}`;
+      pulse.className = `chain-pulse ${isValid ? 'valid' : 'invalid'}`;
+      title.className = `chain-title ${isValid ? 'valid' : 'invalid'}`;
+      title.textContent = isValid
+        ? 'سلامة السلسلة: صحيحة - تم التحقق من جميع الإدخالات'
+        : 'سلامة السلسلة: خطأ - قد يكون هناك تلاعب بالبيانات';
+      hash.textContent = data.chainHash || '—';
+
+      // Summary
+      document.getElementById('stat-total').textContent = KernelUtils.formatNumber(data.totalEntries || 0);
+      const actionCount = data.summary?.actionTypes
+        ? Object.keys(data.summary.actionTypes).length
+        : 0;
+      document.getElementById('stat-actions').textContent = actionCount;
+      document.getElementById('stat-actors').textContent = KernelUtils.formatNumber(data.summary?.actorCount || 0);
+
+      // Entries
+      allEntries = data.entries || [];
+      document.getElementById('entries-count').textContent = `${allEntries.length} إدخالاً`;
+      renderEntries();
+    }
+
+    function renderChainError() {
+      document.getElementById('chain-title').textContent = 'تعذّر تحميل بيانات السلسلة';
+      document.getElementById('chain-hash').textContent = '—';
+      document.getElementById('audit-log-body').innerHTML =
+        '<div class="error-state">تعذّر تحميل سجل التدقيق. يرجى المحاولة مجدداً.</div>';
+    }
+
+    function setActionFilter(btn, filter) {
+      currentActionFilter = filter;
+      document.querySelectorAll('.filter-btn[data-action]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderEntries();
+    }
+
+    function filterEntries() {
+      renderEntries();
+    }
+
+    function renderEntries() {
+      const search = document.getElementById('audit-search').value.toLowerCase();
+      let items = allEntries;
+
+      if (currentActionFilter !== 'all') {
+        items = items.filter(e => {
+          const actionKey = (e.action || '').toLowerCase();
+          return actionKey.includes(currentActionFilter);
+        });
+      }
+
+      if (search) {
+        items = items.filter(e =>
+          (e.action || '').toLowerCase().includes(search) ||
+          (e.actor || '').toLowerCase().includes(search) ||
+          (e.requestId || '').toLowerCase().includes(search)
+        );
+      }
+
+      const body = document.getElementById('audit-log-body');
+
+      if (items.length === 0) {
+        body.innerHTML = '<div class="loading-entries">لا توجد نتائج لهذا الفلتر.</div>';
+        return;
+      }
+
+      body.innerHTML = items.slice(0, 100).map(entry => {
+        const action = entry.action || 'UNKNOWN';
+        const info = ACTION_LABELS[action] || { label: action, cls: 'system' };
+        const time = entry.timestamp
+          ? new Date(entry.timestamp).toLocaleString('ar-SA', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          : '—';
+        const shortId = (entry.requestId || '').substring(0, 12);
+        const shortHash = (entry.hash || '').substring(0, 12);
+        const actor = KernelUtils.escapeHtml(entry.actor || 'نظام');
+
+        return `
+          <div class="audit-entry">
+            <span class="audit-time">${time}</span>
+            <span class="audit-action-badge ${info.cls}" aria-label="${info.label}">${info.label}</span>
+            <span class="audit-details">
+              <span class="actor">${actor}</span> — معرف الطلب: ${shortId}...
+            </span>
+            <span class="audit-hash" onclick="copyToClipboard('${entry.hash || ''}')" title="نسخ التجزئة">${shortHash}...</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyHash(el) {
+      const text = el.textContent.trim();
+      copyToClipboard(text);
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        KernelUtils?.showToast?.('تم النسخ!', 'success');
+      }).catch(() => {
+        console.log('[v0] Clipboard copy failed');
+      });
+    }
   </script>
 </body>
 </html>
