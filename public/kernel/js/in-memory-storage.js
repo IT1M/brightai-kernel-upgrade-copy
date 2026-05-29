@@ -1,34 +1,21 @@
 /**
  * In-Memory Storage Module
  * Stores governance requests, approvals, and system state
- * Note: For production, replace with a database (Neon, Supabase, etc.)
  */
 
-import { GovernanceRequest, ApprovalStatus } from './governance-pipeline';
-
-export interface StorageStats {
-  totalRequests: number;
-  pendingRequests: number;
-  approvedRequests: number;
-  completedRequests: number;
-  rejectedRequests: number;
-  averageRiskScore: number;
-}
-
-export class InMemoryStorage {
-  private requests: Map<string, GovernanceRequest> = new Map();
-  private requestsByStatus: Map<ApprovalStatus, Set<string>> = new Map();
-  private userApprovals: Map<string, string[]> = new Map(); // user -> [request_ids]
-
+class InMemoryStorage {
   constructor() {
-    // Initialize status maps
-    const statuses: ApprovalStatus[] = ['pending', 'approved', 'executed_after_approval', 'completed', 'rejected'];
+    this.requests = new Map();
+    this.requestsByStatus = new Map();
+    this.userApprovals = new Map();
+
+    const statuses = ['pending', 'approved', 'executed_after_approval', 'completed', 'rejected'];
     for (const status of statuses) {
       this.requestsByStatus.set(status, new Set());
     }
   }
 
-  saveRequest(request: GovernanceRequest): void {
+  saveRequest(request) {
     this.requests.set(request.id, request);
     const currentStatus = this.requestsByStatus.get(request.approvalStatus);
     if (currentStatus) {
@@ -36,20 +23,18 @@ export class InMemoryStorage {
     }
   }
 
-  getRequest(requestId: string): GovernanceRequest | undefined {
+  getRequest(requestId) {
     return this.requests.get(requestId);
   }
 
-  updateRequest(request: GovernanceRequest): void {
+  updateRequest(request) {
     const existing = this.requests.get(request.id);
     if (existing) {
-      // Remove from old status
       const oldStatus = this.requestsByStatus.get(existing.approvalStatus);
       if (oldStatus) {
         oldStatus.delete(request.id);
       }
 
-      // Add to new status
       const newStatus = this.requestsByStatus.get(request.approvalStatus);
       if (newStatus) {
         newStatus.add(request.id);
@@ -59,25 +44,23 @@ export class InMemoryStorage {
     this.requests.set(request.id, request);
   }
 
-  getRequestsByStatus(status: ApprovalStatus): GovernanceRequest[] {
+  getRequestsByStatus(status) {
     const ids = this.requestsByStatus.get(status) || new Set();
     return Array.from(ids)
       .map((id) => this.requests.get(id))
-      .filter((req): req is GovernanceRequest => req !== undefined);
+      .filter((req) => req !== undefined);
   }
 
-  getAllRequests(): GovernanceRequest[] {
+  getAllRequests() {
     return Array.from(this.requests.values());
   }
 
-  getRequestsByUser(userId: string): GovernanceRequest[] {
+  getRequestsByUser(userId) {
     const requestIds = this.userApprovals.get(userId) || [];
-    return requestIds
-      .map((id) => this.requests.get(id))
-      .filter((req): req is GovernanceRequest => req !== undefined);
+    return requestIds.map((id) => this.requests.get(id)).filter((req) => req !== undefined);
   }
 
-  recordApproval(requestId: string, userId: string, approverName: string): GovernanceRequest | undefined {
+  recordApproval(requestId, userId, approverName) {
     const request = this.requests.get(requestId);
     if (!request) return undefined;
 
@@ -86,7 +69,6 @@ export class InMemoryStorage {
       approver: approverName,
     });
 
-    // Track user approvals
     if (!this.userApprovals.has(userId)) {
       this.userApprovals.set(userId, []);
     }
@@ -95,7 +77,6 @@ export class InMemoryStorage {
       userRequests.push(requestId);
     }
 
-    // Update status if we have enough approvals
     const requiredApprovals = request.riskAssessment.matchedRules.reduce(
       (max, rule) => Math.max(max, rule.requiredApprovals),
       0,
@@ -109,7 +90,7 @@ export class InMemoryStorage {
     return request;
   }
 
-  rejectRequest(requestId: string, reason: string): GovernanceRequest | undefined {
+  rejectRequest(requestId, reason) {
     const request = this.requests.get(requestId);
     if (!request) return undefined;
 
@@ -119,7 +100,7 @@ export class InMemoryStorage {
     return request;
   }
 
-  executeRequest(requestId: string, response: string): GovernanceRequest | undefined {
+  executeRequest(requestId, response) {
     const request = this.requests.get(requestId);
     if (!request) return undefined;
 
@@ -130,7 +111,7 @@ export class InMemoryStorage {
     return request;
   }
 
-  completeRequest(requestId: string): GovernanceRequest | undefined {
+  completeRequest(requestId) {
     const request = this.requests.get(requestId);
     if (!request) return undefined;
 
@@ -140,9 +121,8 @@ export class InMemoryStorage {
     return request;
   }
 
-  getStats(): StorageStats {
+  getStats() {
     const all = Array.from(this.requests.values());
-
     const riskScores = all.map((r) => r.riskAssessment.score);
     const avgRiskScore = riskScores.length > 0 ? riskScores.reduce((a, b) => a + b, 0) / riskScores.length : 0;
 
@@ -156,7 +136,7 @@ export class InMemoryStorage {
     };
   }
 
-  exportAsJson(): string {
+  exportAsJson() {
     return JSON.stringify(
       {
         exportTime: Date.now(),
@@ -168,7 +148,7 @@ export class InMemoryStorage {
     );
   }
 
-  importFromJson(jsonString: string): boolean {
+  importFromJson(jsonString) {
     try {
       const data = JSON.parse(jsonString);
       this.requests.clear();
@@ -186,7 +166,7 @@ export class InMemoryStorage {
     }
   }
 
-  clear(): void {
+  clear() {
     this.requests.clear();
     for (const status of this.requestsByStatus.values()) {
       status.clear();
@@ -194,36 +174,28 @@ export class InMemoryStorage {
     this.userApprovals.clear();
   }
 
-  // Advanced filtering
-  getRequestsWithPii(): GovernanceRequest[] {
+  getRequestsWithPii() {
     return Array.from(this.requests.values()).filter((r) => r.piiMatches.length > 0);
   }
 
-  getHighRiskRequests(): GovernanceRequest[] {
-    return Array.from(this.requests.values()).filter((r) => r.riskAssessment.riskLevel === 'high' || r.riskAssessment.riskLevel === 'critical');
-  }
-
-  getRequestsAwaitingApproval(): GovernanceRequest[] {
-    return this.getRequestsByStatus('pending').filter(
-      (r) => r.riskAssessment.matchedRules.length > 0 && r.approvals.length < r.riskAssessment.matchedRules.reduce(
-        (max, rule) => Math.max(max, rule.requiredApprovals),
-        0,
-      )
+  getHighRiskRequests() {
+    return Array.from(this.requests.values()).filter(
+      (r) => r.riskAssessment.riskLevel === 'high' || r.riskAssessment.riskLevel === 'critical',
     );
   }
 
-  getAuditLog(limit: number = 100): Array<{
-    timestamp: number;
-    action: string;
-    requestId: string;
-    details: string;
-  }> {
-    const logs: Array<{
-      timestamp: number;
-      action: string;
-      requestId: string;
-      details: string;
-    }> = [];
+  getRequestsAwaitingApproval() {
+    return this.getRequestsByStatus('pending').filter((r) => {
+      const requiredApprovals = r.riskAssessment.matchedRules.reduce(
+        (max, rule) => Math.max(max, rule.requiredApprovals),
+        0,
+      );
+      return r.riskAssessment.matchedRules.length > 0 && r.approvals.length < requiredApprovals;
+    });
+  }
+
+  getAuditLog(limit = 100) {
+    const logs = [];
 
     for (const request of Array.from(this.requests.values()).reverse()) {
       logs.push({
@@ -267,19 +239,21 @@ export class InMemoryStorage {
   }
 }
 
-// Singleton instance
-let storageInstance: InMemoryStorage | null = null;
+let storageInstance = null;
 
-export function getStorage(): InMemoryStorage {
+function getStorage() {
   if (!storageInstance) {
     storageInstance = new InMemoryStorage();
   }
   return storageInstance;
 }
 
-export function resetStorage(): void {
+function resetStorage() {
   if (storageInstance) {
     storageInstance.clear();
   }
   storageInstance = null;
 }
+
+// Export for use in browser
+window.InMemoryStorage = { getStorage, resetStorage, InMemoryStorage };

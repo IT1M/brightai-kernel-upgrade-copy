@@ -3,37 +3,7 @@
  * Manages LLM provider selection with exponential backoff and fallbacks
  */
 
-export type ProviderName = 'nvidia_minimax' | 'google_gemini' | 'demo_mode';
-
-export interface ProviderConfig {
-  name: ProviderName;
-  model: string;
-  priority: number;
-  apiKeyRequired: boolean;
-  maxRetries: number;
-  timeoutMs: number;
-  costPer1kTokens: number;
-}
-
-export interface ProviderResponse {
-  provider: ProviderName;
-  model: string;
-  response: string;
-  tokensUsed: number;
-  latencyMs: number;
-  costEstimate: number;
-  confidence: number;
-}
-
-export interface ProviderGatewayConfig {
-  providers: ProviderConfig[];
-  requestTimeout: number;
-  exponentialBackoffMultiplier: number;
-  maxBackoffMs: number;
-}
-
-// Provider configurations
-export const DEFAULT_PROVIDERS: ProviderConfig[] = [
+const DEFAULT_PROVIDERS = [
   {
     name: 'nvidia_minimax',
     model: 'NVIDIA MiniMax M2.7',
@@ -63,40 +33,23 @@ export const DEFAULT_PROVIDERS: ProviderConfig[] = [
   },
 ];
 
-export const DEFAULT_GATEWAY_CONFIG: ProviderGatewayConfig = {
-  providers: DEFAULT_PROVIDERS,
-  requestTimeout: 45000,
-  exponentialBackoffMultiplier: 2,
-  maxBackoffMs: 30000,
-};
-
 class ProviderGateway {
-  private config: ProviderGatewayConfig;
-  private providerStates: Map<ProviderName, { failures: number; lastFailure: number }> = new Map();
-  private requestLog: Array<{
-    provider: ProviderName;
-    timestamp: number;
-    success: boolean;
-    latency: number;
-  }> = [];
+  constructor(providers = DEFAULT_PROVIDERS) {
+    this.providers = providers;
+    this.providerStates = new Map();
+    this.requestLog = [];
 
-  constructor(config: ProviderGatewayConfig = DEFAULT_GATEWAY_CONFIG) {
-    this.config = config;
-    for (const provider of config.providers) {
+    for (const provider of providers) {
       this.providerStates.set(provider.name, { failures: 0, lastFailure: 0 });
     }
   }
 
-  async callProvider(
-    provider: ProviderConfig,
-    query: string,
-    context: string,
-  ): Promise<{ response: string; tokensUsed: number; latencyMs: number }> {
+  async callProvider(provider, query, context) {
     const startTime = Date.now();
 
     try {
-      let response: string;
-      let tokensUsed: number;
+      let response;
+      let tokensUsed;
 
       if (provider.name === 'nvidia_minimax') {
         response = await this.callNvidiaProvider(query, context);
@@ -116,48 +69,37 @@ class ProviderGateway {
     } catch (error) {
       const latencyMs = Date.now() - startTime;
       this.recordFailure(provider.name);
-      throw new Error(
-        `Provider ${provider.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      throw new Error(`Provider ${provider.name} failed: ${error.message}`);
     }
   }
 
-  private async callNvidiaProvider(query: string, context: string): Promise<string> {
-    // Placeholder: In production, this would call actual NVIDIA MiniMax API
-    // For now, simulate a call
+  async callNvidiaProvider(query, context) {
     await this.delay(1500);
-
     if (Math.random() > 0.9) {
       throw new Error('NVIDIA API temporarily unavailable');
     }
-
     return `[NVIDIA Response]\n\n${query} - processed and analyzed using MiniMax M2.7.\n\n${context}`;
   }
 
-  private async callGeminiProvider(query: string, context: string): Promise<string> {
-    // Placeholder: In production, this would call actual Google Gemini API
+  async callGeminiProvider(query, context) {
     await this.delay(1200);
-
     if (Math.random() > 0.85) {
       throw new Error('Gemini API rate limited');
     }
-
     return `[Gemini Response]\n\n${query} - processed using Gemini Pro.\n\n${context}`;
   }
 
-  private async callDemoProvider(query: string, context: string): Promise<string> {
-    // Demo mode: instant response
+  async callDemoProvider(query, context) {
     await this.delay(100);
-
     return `[Demo Mode Response]\n\n${query}\n\nThis is a demonstration response from BrightAI's governance system. In production, this would be processed by NVIDIA MiniMax or Google Gemini.\n\nContext: ${context}`;
   }
 
-  async callWithFallback(query: string, context: string): Promise<ProviderResponse> {
+  async callWithFallback(query, context) {
     const availableProviders = this.getAvailableProviders();
 
     for (const provider of availableProviders) {
       const retries = provider.maxRetries;
-      let lastError: Error | null = null;
+      let lastError = null;
 
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
@@ -166,12 +108,7 @@ class ProviderGateway {
             await this.delay(backoffDelay);
           }
 
-          const { response, tokensUsed, latencyMs } = await this.callProvider(
-            provider,
-            query,
-            context,
-          );
-
+          const { response, tokensUsed, latencyMs } = await this.callProvider(provider, query, context);
           const costEstimate = (tokensUsed / 1000) * provider.costPer1kTokens;
 
           return {
@@ -184,10 +121,8 @@ class ProviderGateway {
             confidence: this.getConfidenceScore(provider.name),
           };
         } catch (error) {
-          lastError = error instanceof Error ? error : new Error(String(error));
-          console.log(
-            `[v0] Provider ${provider.name} attempt ${attempt + 1}/${retries + 1} failed: ${lastError.message}`,
-          );
+          lastError = error;
+          console.log(`[v0] Provider ${provider.name} attempt ${attempt + 1}/${retries + 1} failed: ${lastError.message}`);
         }
       }
 
@@ -197,32 +132,31 @@ class ProviderGateway {
     throw new Error(`All providers failed. Last error: ${lastError?.message}`);
   }
 
-  private getAvailableProviders(): ProviderConfig[] {
-    return this.config.providers.filter((provider) => {
+  getAvailableProviders() {
+    return this.providers.filter((provider) => {
       const state = this.providerStates.get(provider.name);
       if (!state) return false;
 
-      // Check if provider is in cooldown due to repeated failures
       const timeSinceLastFailure = Date.now() - state.lastFailure;
       const cooldownPeriod = Math.min(
         this.calculateBackoffDelay(state.failures, provider.maxRetries),
-        this.config.maxBackoffMs,
+        30000,
       );
 
       return timeSinceLastFailure > cooldownPeriod;
     });
   }
 
-  private calculateBackoffDelay(attempt: number, maxRetries: number): number {
+  calculateBackoffDelay(attempt, maxRetries) {
     const baseDelay = 100;
-    const exponentialDelay = baseDelay * Math.pow(this.config.exponentialBackoffMultiplier, attempt);
-    return Math.min(exponentialDelay, this.config.maxBackoffMs);
+    const exponentialDelay = baseDelay * Math.pow(2, attempt);
+    return Math.min(exponentialDelay, 30000);
   }
 
-  private recordSuccess(provider: ProviderName, latencyMs: number): void {
+  recordSuccess(provider, latencyMs) {
     const state = this.providerStates.get(provider);
     if (state) {
-      state.failures = 0; // Reset failure count on success
+      state.failures = 0;
       state.lastFailure = 0;
     }
 
@@ -234,7 +168,7 @@ class ProviderGateway {
     });
   }
 
-  private recordFailure(provider: ProviderName): void {
+  recordFailure(provider) {
     const state = this.providerStates.get(provider);
     if (state) {
       state.failures++;
@@ -249,14 +183,13 @@ class ProviderGateway {
     });
   }
 
-  private getConfidenceScore(provider: ProviderName): number {
+  getConfidenceScore(provider) {
     const successRate = this.getProviderSuccessRate(provider);
-    const priorityBoost = 1 - (this.config.providers.find((p) => p.name === provider)?.priority || 1) * 0.1;
-
+    const priorityBoost = 1 - (this.providers.find((p) => p.name === provider)?.priority || 1) * 0.1;
     return Math.round(successRate * priorityBoost * 100) / 100;
   }
 
-  private getProviderSuccessRate(provider: ProviderName): number {
+  getProviderSuccessRate(provider) {
     const recentLogs = this.requestLog.slice(-100);
     const providerLogs = recentLogs.filter((log) => log.provider === provider);
 
@@ -266,10 +199,10 @@ class ProviderGateway {
     return successes / providerLogs.length;
   }
 
-  getProviderStats(): Record<ProviderName, { successRate: number; avgLatency: number; totalRequests: number }> {
-    const stats: Record<string, any> = {};
+  getProviderStats() {
+    const stats = {};
 
-    for (const provider of this.config.providers) {
+    for (const provider of this.providers) {
       const logs = this.requestLog.filter((log) => log.provider === provider.name);
       const successCount = logs.filter((log) => log.success).length;
       const avgLatency = logs.length > 0 ? logs.reduce((sum, log) => sum + log.latency, 0) / logs.length : 0;
@@ -284,11 +217,11 @@ class ProviderGateway {
     return stats;
   }
 
-  private delay(ms: number): Promise<void> {
+  delay(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  reset(): void {
+  reset() {
     this.requestLog = [];
     for (const state of this.providerStates.values()) {
       state.failures = 0;
@@ -297,18 +230,20 @@ class ProviderGateway {
   }
 }
 
-// Singleton instance
-let gatewayInstance: ProviderGateway | null = null;
+let gatewayInstance = null;
 
-export function getGateway(config?: ProviderGatewayConfig): ProviderGateway {
+function getGateway() {
   if (!gatewayInstance) {
-    gatewayInstance = new ProviderGateway(config || DEFAULT_GATEWAY_CONFIG);
+    gatewayInstance = new ProviderGateway();
   }
   return gatewayInstance;
 }
 
-export function resetGateway(): void {
+function resetGateway() {
   if (gatewayInstance) {
     gatewayInstance.reset();
   }
 }
+
+// Export for use in browser
+window.ProviderGateway = { getGateway, resetGateway, ProviderGateway };

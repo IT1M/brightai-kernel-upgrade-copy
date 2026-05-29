@@ -3,50 +3,7 @@
  * 13-step processing pipeline with risk scoring and compliance matching
  */
 
-export type ApprovalStatus = 'pending' | 'approved' | 'executed_after_approval' | 'completed' | 'rejected';
-
-export type RiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'minimal';
-
-export interface ComplianceRule {
-  id: string;
-  name: string;
-  description: string;
-  riskThreshold: number;
-  requiredApprovals: number;
-  category: 'data_protection' | 'ai_governance' | 'saudi_regulations' | 'corporate_policy';
-}
-
-export interface RiskAssessment {
-  riskLevel: RiskLevel;
-  score: number; // 0-100
-  factors: {
-    piiDetectionScore: number;
-    requestComplexity: number;
-    modelUncertainty: number;
-    regulatoryRisk: number;
-    dataExposureRisk: number;
-  };
-  matchedRules: ComplianceRule[];
-}
-
-export interface GovernanceRequest {
-  id: string;
-  timestamp: number;
-  userQuery: string;
-  maskedQuery: string;
-  originalQuery: string;
-  piiMatches: any[];
-  step: number; // 1-13
-  riskAssessment: RiskAssessment;
-  approvalStatus: ApprovalStatus;
-  approvals: Array<{ timestamp: number; approver: string }>;
-  aiResponse?: string;
-  executedAt?: number;
-  completedAt?: number;
-}
-
-// 13 Compliance Rules
-export const COMPLIANCE_RULES: ComplianceRule[] = [
+const COMPLIANCE_RULES = [
   {
     id: 'rule_001',
     name: 'PII Protection',
@@ -153,30 +110,26 @@ export const COMPLIANCE_RULES: ComplianceRule[] = [
   },
 ];
 
-export function assessRisk(
-  piiDetectionScore: number,
-  requestComplexity: number,
-  modelUncertainty: number,
-): RiskAssessment {
-  // Determine regulatory and data exposure risk based on inputs
+function assessRisk(piiDetectionScore, requestComplexity, modelUncertainty) {
   const regulatoryRisk = piiDetectionScore * 0.6 + requestComplexity * 0.4;
   const dataExposureRisk = piiDetectionScore * 0.8 + modelUncertainty * 0.2;
 
-  // Calculate overall risk score
   const score = Math.round(
-    (piiDetectionScore * 0.35 + requestComplexity * 0.25 + modelUncertainty * 0.2 + regulatoryRisk * 0.1 + dataExposureRisk * 0.1) *
+    (piiDetectionScore * 0.35 +
+      requestComplexity * 0.25 +
+      modelUncertainty * 0.2 +
+      regulatoryRisk * 0.1 +
+      dataExposureRisk * 0.1) *
       100,
   );
 
-  // Determine risk level
-  let riskLevel: RiskLevel;
+  let riskLevel;
   if (score >= 85) riskLevel = 'critical';
   else if (score >= 70) riskLevel = 'high';
   else if (score >= 50) riskLevel = 'medium';
   else if (score >= 30) riskLevel = 'low';
   else riskLevel = 'minimal';
 
-  // Match applicable compliance rules
   const matchedRules = COMPLIANCE_RULES.filter((rule) => score >= rule.riskThreshold * 100);
 
   return {
@@ -193,27 +146,27 @@ export function assessRisk(
   };
 }
 
-export function getRequiredApprovals(riskAssessment: RiskAssessment): number {
+function getRequiredApprovals(riskAssessment) {
   const maxApprovals = Math.max(...riskAssessment.matchedRules.map((r) => r.requiredApprovals));
-  return maxApprovals;
+  return maxApprovals || 0;
 }
 
-export function getRiskColor(riskLevel: RiskLevel): string {
+function getRiskColor(riskLevel) {
   switch (riskLevel) {
     case 'critical':
-      return '#DC2626'; // Red
+      return '#DC2626';
     case 'high':
-      return '#EA580C'; // Orange
+      return '#EA580C';
     case 'medium':
-      return '#F59E0B'; // Amber
+      return '#F59E0B';
     case 'low':
-      return '#84CC16'; // Lime
+      return '#84CC16';
     case 'minimal':
-      return '#22C55E'; // Green
+      return '#22C55E';
   }
 }
 
-export function getRiskDescription(riskLevel: RiskLevel): string {
+function getRiskDescription(riskLevel) {
   switch (riskLevel) {
     case 'critical':
       return 'Critical Risk - Requires immediate review and multiple approvals';
@@ -228,13 +181,7 @@ export function getRiskDescription(riskLevel: RiskLevel): string {
   }
 }
 
-export function createGovernanceRequest(
-  userQuery: string,
-  maskedQuery: string,
-  originalQuery: string,
-  piiMatches: any[],
-  riskAssessment: RiskAssessment,
-): GovernanceRequest {
+function createGovernanceRequest(userQuery, maskedQuery, originalQuery, piiMatches, riskAssessment) {
   return {
     id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     timestamp: Date.now(),
@@ -249,6 +196,17 @@ export function createGovernanceRequest(
   };
 }
 
-export function shouldRequireApproval(riskAssessment: RiskAssessment): boolean {
+function shouldRequireApproval(riskAssessment) {
   return riskAssessment.matchedRules.length > 0;
 }
+
+// Export for use in browser
+window.GovernancePipeline = {
+  COMPLIANCE_RULES,
+  assessRisk,
+  getRequiredApprovals,
+  getRiskColor,
+  getRiskDescription,
+  createGovernanceRequest,
+  shouldRequireApproval,
+};
