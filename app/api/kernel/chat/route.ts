@@ -1,9 +1,7 @@
 import { z } from 'zod';
-import { detectPii, maskPii } from '@/lib/pii-detection';
-import { assessRisk, createGovernanceRequest, shouldRequireApproval } from '@/lib/governance-pipeline';
-import { getGateway } from '@/lib/provider-gateway';
-import { getAuditChain } from '@/lib/audit-chain';
-import { getStorage } from '@/lib/in-memory-storage';
+import { createKernelRequest, processKernelRequest } from '@/lib/kernel-engine';
+import { addBlock, getAuditChain } from '@/lib/audit-chain';
+import { getProviderHealth } from '@/lib/provider-gateway';
 
 // Zod schema for request validation
 const chatRequestSchema = z.object({
@@ -38,7 +36,7 @@ export async function POST(request: Request) {
     
     if (!validationResult.success) {
       return Response.json({
-        error: 'Validation error',
+        error: 'خطأ في التحقق من البيانات',
         details: validationResult.error.errors,
         requestId,
       }, { status: 400 });
@@ -46,125 +44,61 @@ export async function POST(request: Request) {
 
     const { query, context, compliancePackage } = validationResult.data;
 
-    // Step 1: Detect PII
-    const piiResult = detectPii(query);
-    const maskedQuery = piiResult.maskedText;
-
-    // Step 2: Assess risk
-    const riskAssessment = assessRisk(piiResult.detectionScore, 0.3, 0.2);
-
-    // Step 3: Create governance request
-    const govRequest = createGovernanceRequest(
-      query,
-      maskedQuery,
-      query,
-      piiResult.matches,
-      riskAssessment
-    );
-    govRequest.id = requestId;
-    (govRequest as any).userId = userId;
-    (govRequest as any).userName = userName;
-    (govRequest as any).compliancePackage = compliancePackage;
-
-    // Step 4: Save request
-    const storage = getStorage();
-    storage.saveRequest(govRequest);
-
-    // Step 5: Log in audit chain
-    const auditChain = getAuditChain();
-    auditChain.addEntry(
-      'request_created',
+    // Create kernel request (handles PII detection, risk assessment, etc.)
+    const kernelRequest = createKernelRequest(
       userId,
-      govRequest.id,
-      {
-        hasPii: piiResult.hasPii,
-        riskLevel: riskAssessment.riskLevel,
-        matchedRules: riskAssessment.matchedRules.length,
-        compliancePackage,
-        userName,
-      },
+      userName,
+      query,
+      compliancePackage
     );
 
-    // Step 6: Determine if approval is needed
-    const needsApproval = shouldRequireApproval(riskAssessment);
+    // Log in audit chain
+    addBlock('request_created', {
+      requestId: kernelRequest.id,
+      userId,
+      userName,
+      hasPii: kernelRequest.piiResult.hasPII,
+      riskLevel: kernelRequest.riskAssessment.level,
+      compliancePackage,
+    });
 
-    if (needsApproval) {
-      return Response.json({
-        requestId: govRequest.id,
-        status: 'pending_approval',
-        message: 'تم وضع الطلب في قائمة الانتظار للمراجعة بسبب قواعد الحوكمة',
-        riskLevel: riskAssessment.riskLevel,
-        riskScore: riskAssessment.score,
-        requiredApprovals: riskAssessment.matchedRules.reduce(
-          (max, rule) => Math.max(max, rule.requiredApprovals),
-          0,
-        ),
-        matchedRules: riskAssessment.matchedRules.map((r) => ({ id: r.id, name: r.name })),
-        hasPii: piiResult.hasPii,
-        piiMatches: piiResult.matches.map(m => ({
-          type: m.type,
-          masked: true,
-        })),
-        chainHash: auditChain.getChainHash(),
+    // Process the request
+    const response = await processKernelRequest(kernelRequest);
+    
+    // Log completion or approval required
+    if (response.status === 'pending_approval') {
+      addBlock('approval_required', {
+        requestId: kernelRequest.id,
+        riskLevel: response.riskLevel,
+        riskScore: response.riskScore,
+      });
+    } else if (response.status === 'completed') {
+      addBlock('request_completed', {
+        requestId: kernelRequest.id,
+        provider: response.provider,
+        model: response.model,
+        latencyMs: response.latencyMs,
       });
     }
 
-    // Step 7: Process immediately if no approval needed
-    const gateway = getGateway();
-    const providerResponse = await gateway.callWithFallback(maskedQuery, context);
-
-    // Step 8: Post-response safety check
-    const responseCheck = detectPii(providerResponse.response);
-    const safeResponse = responseCheck.hasPii 
-      ? responseCheck.maskedText 
-      : providerResponse.response;
-
-    // Update request
-    govRequest.aiResponse = safeResponse;
-    govRequest.approvalStatus = 'completed';
-    govRequest.executedAt = Date.now();
-    govRequest.completedAt = Date.now();
-    storage.updateRequest(govRequest);
-
-    // Log completion
-    auditChain.addEntry(
-      'request_completed',
-      'system',
-      govRequest.id,
-      {
-        provider: providerResponse.provider,
-        model: providerResponse.model,
-        responseLength: safeResponse.length,
-        latencyMs: providerResponse.latencyMs,
-        tokensUsed: providerResponse.tokensUsed,
-      },
-    );
+    // Get audit chain hash
+    const auditChain = getAuditChain();
+    const chainHash = auditChain.blocks.length > 0 
+      ? auditChain.blocks[auditChain.blocks.length - 1].hash 
+      : '00000000';
 
     return Response.json({
-      requestId: govRequest.id,
-      status: 'completed',
-      response: safeResponse,
-      provider: providerResponse.provider,
-      model: providerResponse.model,
-      riskLevel: riskAssessment.riskLevel,
-      riskScore: riskAssessment.score,
-      hasPii: piiResult.hasPii,
-      piiMatches: piiResult.matches.map(m => ({
-        type: m.type,
-        masked: true,
-      })),
-      tokensUsed: providerResponse.tokensUsed,
-      latencyMs: providerResponse.latencyMs,
-      chainHash: auditChain.getChainHash(),
-      matchedPolicies: riskAssessment.matchedRules.map((r) => r.name),
+      ...response,
+      requestId: kernelRequest.id,
+      chainHash,
     });
   } catch (error) {
     console.error('[v0] Chat API error:', error);
     
     // Log error in audit chain
     try {
-      const auditChain = getAuditChain();
-      auditChain.addEntry('request_error', 'system', requestId, {
+      addBlock('request_error', {
+        requestId,
         error: error instanceof Error ? error.message : String(error),
       });
     } catch (e) {
@@ -175,6 +109,7 @@ export async function POST(request: Request) {
       { 
         error: 'حدث خطأ في معالجة الطلب',
         requestId,
+        success: false,
       },
       { status: 500 },
     );

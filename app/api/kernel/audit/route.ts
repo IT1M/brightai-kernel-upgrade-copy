@@ -1,23 +1,34 @@
-import { getStorage } from '@/lib/in-memory-storage';
-import { getAuditChain } from '@/lib/audit-chain';
+import { getAuditChain, verifyChain, getRecentBlocks } from '@/lib/audit-chain';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const storage = getStorage();
-    const auditChain = getAuditChain();
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    const auditLog = storage.getAuditLog(200);
-    const chainVerification = auditChain.verifyChain();
+    const auditChain = getAuditChain();
+    const recentBlocks = getRecentBlocks(limit);
+    const verification = verifyChain();
 
     return Response.json({
-      timestamp: Date.now(),
-      auditLog,
+      timestamp: new Date().toISOString(),
+      auditLog: recentBlocks.map(block => ({
+        id: block.id,
+        action: block.action,
+        timestamp: block.timestamp,
+        index: block.index,
+        hash: block.hash.substring(0, 16),
+        data: block.data,
+      })),
       chainVerification: {
-        isValid: chainVerification.isValid,
-        details: chainVerification.details,
-        currentChainHash: auditChain.getChainHash(),
+        valid: verification.valid,
+        brokenAt: verification.brokenAt,
+        totalBlocks: auditChain.blocks.length,
+        lastHash: auditChain.lastHash,
       },
-      summary: auditChain.getSummary(),
+      summary: {
+        totalBlocks: auditChain.blocks.length,
+        actions: Array.from(new Set(auditChain.blocks.map(b => b.action))),
+      },
     });
   } catch (error) {
     console.error('[v0] Audit API error:', error);

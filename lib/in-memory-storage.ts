@@ -37,10 +37,22 @@ interface AuditEntry {
   hash?: string;
 }
 
+interface Request {
+  id: string;
+  userId: string;
+  originalQuery: string;
+  maskedQuery: string;
+  status: 'pending' | 'approved' | 'completed';
+  approvalStatus: string;
+  createdAt: number;
+  completedAt?: number;
+}
+
 interface Storage {
   messages: Message[];
   approvals: Approval[];
   audit: AuditEntry[];
+  requests: Request[];
   stats: {
     totalRequests: number;
     piiDetected: number;
@@ -56,6 +68,7 @@ let storage: Storage = {
   messages: [],
   approvals: [],
   audit: [],
+  requests: [],
   stats: {
     totalRequests: 0,
     piiDetected: 0,
@@ -122,11 +135,31 @@ export function addAuditEntry(entry: AuditEntry): void {
   storage.audit.push(entry);
 }
 
+export function saveRequest(request: Request): void {
+  storage.requests.push(request);
+}
+
+export function updateRequest(request: Request): void {
+  const index = storage.requests.findIndex(r => r.id === request.id);
+  if (index !== -1) {
+    storage.requests[index] = request;
+  }
+}
+
+export function getRequest(id: string): Request | undefined {
+  return storage.requests.find(r => r.id === id);
+}
+
+export function getAllRequests(): Request[] {
+  return storage.requests;
+}
+
 export function resetStorage(): void {
   storage = {
     messages: [],
     approvals: [],
     audit: [],
+    requests: [],
     stats: {
       totalRequests: 0,
       piiDetected: 0,

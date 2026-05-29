@@ -1,32 +1,33 @@
-import { getStorage } from '@/lib/in-memory-storage';
-import { getAuditChain } from '@/lib/audit-chain';
+import { getPendingApprovals, getRequest, updateRequestStatus, processKernelRequest } from '@/lib/kernel-engine';
+import { addBlock } from '@/lib/audit-chain';
 
 export async function GET() {
   try {
-    const storage = getStorage();
-
-    const awaitingApproval = storage.getRequestsAwaitingApproval();
+    const pending = getPendingApprovals();
 
     return Response.json({
-      timestamp: Date.now(),
-      pending: awaitingApproval.map((req) => ({
+      timestamp: new Date().toISOString(),
+      pending: pending.map((req) => ({
         id: req.id,
-        query: req.userQuery.substring(0, 200),
-        riskLevel: req.riskAssessment.riskLevel,
+        query: req.originalQuery.substring(0, 200),
+        riskLevel: req.riskAssessment.level,
         riskScore: req.riskAssessment.score,
-        approvalCount: req.approvals.length,
-        requiredApprovals: req.riskAssessment.matchedRules.reduce(
-          (max: number, rule: any) => Math.max(max, rule.requiredApprovals),
-          0,
-        ),
-        createdAt: req.timestamp,
-        matchedRules: req.riskAssessment.matchedRules.map((r: any) => ({ id: r.id, name: r.name })),
-        piiMatches: req.piiMatches || [],
+        requiredApprovals: req.riskAssessment.matchedRules?.reduce(
+          (max: number, rule: any) => Math.max(max, rule.requiredApprovals || 1),
+          1,
+        ) || 1,
+        createdAt: req.createdAt,
+        matchedRules: req.riskAssessment.matchedRules?.map((r: any) => ({ id: r.id, name: r.name })) || [],
+        piiMatches: req.piiResult.matches.map(m => ({ type: m.type, masked: true })) || [],
+        user: {
+          id: req.userId,
+          name: req.userName,
+        },
       })),
       summary: {
-        totalPending: awaitingApproval.length,
-        criticalCount: awaitingApproval.filter((r) => r.riskAssessment.riskLevel === 'critical').length,
-        highCount: awaitingApproval.filter((r) => r.riskAssessment.riskLevel === 'high').length,
+        totalPending: pending.length,
+        criticalCount: pending.filter((r) => r.riskAssessment.level === 'critical').length,
+        highCount: pending.filter((r) => r.riskAssessment.level === 'high').length,
       },
     });
   } catch (error) {
@@ -43,38 +44,61 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const storage = getStorage();
-    const auditChain = getAuditChain();
+    const kernelRequest = getRequest(requestId);
+    if (!kernelRequest) {
+      return Response.json({ error: 'Request not found' }, { status: 404 });
+    }
 
-    let updatedRequest;
-    let executionResult = null;
+    let response = null;
 
     if (action === 'approve') {
-      updatedRequest = storage.recordApproval(requestId, 'approver_id', approver);
-      auditChain.addEntry('request_approved', approver, requestId, { action });
-      
-      // Check if all required approvals are met and execute
-      if (updatedRequest && updatedRequest.approvalStatus === 'approved') {
-        // TODO: Execute the AI call after approval
-        // This would call the provider with the masked query
-        auditChain.addEntry('request_executed_after_approval', 'system', requestId, {
+      // Mark as approved
+      updateRequestStatus(requestId, 'approved', {
+        approvalStatus: 'approved',
+      });
+
+      addBlock('approval_granted', {
+        requestId,
+        approver,
+      });
+
+      // Execute the AI call with the masked query
+      const updatedRequest = getRequest(requestId);
+      if (updatedRequest) {
+        response = await processKernelRequest(updatedRequest, true);
+        
+        addBlock('request_executed_after_approval', {
+          requestId,
           approver,
-          approvalCount: updatedRequest.approvals.length,
+          provider: response.provider,
+          latencyMs: response.latencyMs,
         });
       }
     } else if (action === 'reject') {
-      updatedRequest = storage.rejectRequest(requestId, reason || 'Rejected by approver');
-      auditChain.addEntry('request_rejected', approver, requestId, { action, reason });
+      updateRequestStatus(requestId, 'pending', {
+        approvalStatus: 'rejected',
+        completedAt: Date.now(),
+      });
+
+      addBlock('approval_rejected', {
+        requestId,
+        approver,
+        reason: reason || 'Rejected by approver',
+      });
+
+      response = {
+        success: true,
+        requestId,
+        status: 'rejected',
+        message: 'The request was rejected.',
+      };
     } else {
       return Response.json({ error: 'Invalid action' }, { status: 400 });
     }
 
     return Response.json({
       success: true,
-      requestId,
-      status: updatedRequest?.approvalStatus,
-      approvalCount: updatedRequest?.approvals.length || 0,
-      executionResult,
+      ...response,
     });
   } catch (error) {
     console.error('[v0] Approval action error:', error);

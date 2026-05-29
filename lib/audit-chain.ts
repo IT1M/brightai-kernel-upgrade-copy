@@ -70,13 +70,17 @@ export function addBlock(action: string, data: Record<string, unknown>): AuditBl
   auditChain.lastHash = hash;
   
   // Also add to in-memory storage for API access
-  addAuditEntry({
-    id,
-    action,
-    timestamp,
-    details: data,
-    hash,
-  });
+  try {
+    addAuditEntry({
+      id,
+      action,
+      timestamp,
+      details: data,
+      hash,
+    });
+  } catch (e) {
+    // Ignore storage errors
+  }
   
   return completeBlock;
 }
@@ -167,3 +171,5 @@ export function logSystemEvent(event: string, details: Record<string, unknown>):
     ...details,
   });
 }
+
+
