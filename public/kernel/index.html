@@ -1,343 +1,870 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#030A18">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>BrightAI Kernel - Saudi AI Governance</title>
-  <meta name="description" content="Enterprise AI governance platform for Saudi Arabia with PII detection, risk assessment, and audit trail compliance.">
+  
+  <title>نواة BrightAI - حوكمة الذكاء الاصطناعي للمؤسسات السعودية</title>
+  <meta name="description" content="منصة حوكمة الذكاء الاصطناعي المؤسسية للسوق السعودي مع كشف البيانات الحساسة وتقييم المخاطر وسلسلة التدقيق غير القابلة للتلاعب.">
+  
   <link rel="manifest" href="/kernel/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  
+  <!-- Preload fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <link rel="stylesheet" href="/kernel/assets/css/kernel.css">
+  
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --bg: #0a0e27;
-      --card: #111827;
-      --accent: #00d9ff;
-      --accent-dark: #007f99;
-      --purple: #7c3aed;
-      --danger: #dc2626;
-      --text: #f1f5f9;
-      --text-secondary: #cbd5e1;
-      --border: #1e293b;
-    }
-
-    html, body {
-      background: linear-gradient(135deg, #0a0e27 0%, #0f172a 50%, #0a0e27 100%);
-      color: var(--text);
-      font-family: 'IBM Plex Sans', 'IBM Plex Sans Arabic', sans-serif;
-      line-height: 1.6;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    .glass {
-      background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-    }
-
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 20px 0;
-      margin-bottom: 40px;
-    }
-
-    .header-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    nav {
-      display: flex;
-      gap: 30px;
-      list-style: none;
-    }
-
-    nav a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-weight: 500;
-      transition: color 0.3s;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-    }
-
-    nav a:hover {
-      color: var(--accent);
-    }
-
+    /* Page-specific styles */
     .hero {
+      padding: var(--space-12) 0;
       text-align: center;
-      margin-bottom: 60px;
     }
 
-    .hero h1 {
-      font-size: clamp(32px, 8vw, 56px);
-      margin-bottom: 16px;
+    .hero-title {
+      font-size: clamp(2.5rem, 6vw, 4rem);
       font-weight: 700;
+      margin-bottom: var(--space-4);
       line-height: 1.2;
     }
 
-    .hero p {
-      font-size: 18px;
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
       color: var(--text-secondary);
-      margin-bottom: 32px;
+      max-width: 640px;
+      margin: 0 auto var(--space-8);
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: var(--space-8);
+    }
+
+    /* Provider Status Banner */
+    .provider-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      background: rgba(0, 212, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      font-size: 0.875rem;
+      margin: 0 auto var(--space-10);
+      max-width: fit-content;
+    }
+
+    .provider-banner.active {
+      border-color: var(--success);
+      background: var(--success-bg);
+    }
+
+    .provider-banner.demo {
+      border-color: var(--warning);
+      background: var(--warning-bg);
+    }
+
+    .provider-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-full);
+      background: var(--text-tertiary);
+    }
+
+    .provider-banner.active .provider-dot {
+      background: var(--success);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    .provider-banner.demo .provider-dot {
+      background: var(--warning);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-12);
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: var(--space-5);
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--brand);
+      margin-bottom: var(--space-2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Navigation Cards Grid */
+    .nav-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-12);
+    }
+
+    @media (min-width: 1024px) {
+      .nav-cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .nav-card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-5);
+      text-decoration: none;
+      color: inherit;
+      position: relative;
+    }
+
+    .nav-card-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 212, 255, 0.1);
+      border-radius: var(--radius-md);
+      color: var(--brand);
+    }
+
+    .nav-card-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .nav-card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .nav-card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .nav-card .badge-new {
+      position: absolute;
+      top: var(--space-3);
+      left: var(--space-3);
+    }
+
+    [dir="rtl"] .nav-card .badge-new {
+      left: auto;
+      right: var(--space-3);
+    }
+
+    /* Features Section */
+    .features-section {
+      margin-bottom: var(--space-12);
+    }
+
+    .section-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: var(--space-2);
+      text-align: center;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: var(--space-8);
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
     }
 
-    .cta-buttons {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 16px;
-      border: none;
-      cursor: pointer;
-      min-height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-      touch-action: manipulation;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #0f172a;
-      box-shadow: 0 0 20px rgba(0, 217, 255, 0.3);
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-dark);
-      box-shadow: 0 0 30px rgba(0, 217, 255, 0.5);
-    }
-
-    .btn-secondary {
-      background: rgba(0, 217, 255, 0.1);
-      border: 1px solid var(--accent);
-      color: var(--accent);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(0, 217, 255, 0.2);
-    }
-
-    .features {
+    .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-bottom: 60px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: var(--space-6);
     }
 
     .feature-card {
-      padding: 24px;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid rgba(0, 217, 255, 0.1);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
+      display: flex;
+      gap: var(--space-4);
+      padding: var(--space-5);
     }
 
-    .feature-card h3 {
-      font-size: 18px;
-      margin-bottom: 12px;
-      color: var(--accent);
+    .feature-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 212, 255, 0.1);
+      border-radius: var(--radius-md);
+      color: var(--brand);
     }
 
-    .feature-card p {
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .feature-content h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: var(--space-2);
+    }
+
+    .feature-content p {
+      font-size: 0.875rem;
       color: var(--text-secondary);
       line-height: 1.6;
     }
 
-    .stats {
+    /* Problems & Solutions */
+    .problems-section {
+      margin-bottom: var(--space-12);
+    }
+
+    .problems-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
-    }
-
-    .stat-box {
-      padding: 20px;
-      background: rgba(0, 217, 255, 0.05);
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    .stat-number {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .stat-label {
-      color: var(--text-secondary);
-      font-size: 14px;
-      margin-top: 8px;
-    }
-
-    footer {
-      border-top: 1px solid var(--border);
-      padding: 30px 0;
-      text-align: center;
-      color: var(--text-secondary);
-      margin-top: 60px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-6);
     }
 
     @media (max-width: 768px) {
-      nav {
-        display: none;
+      .problems-grid {
+        grid-template-columns: 1fr;
       }
+    }
 
-      .header-content {
-        justify-content: center;
-      }
+    .problem-card {
+      padding: var(--space-5);
+    }
 
-      .cta-buttons {
-        flex-direction: column;
-      }
+    .problem-card.problem {
+      border-color: var(--danger);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
+    }
 
-      .btn {
-        width: 100%;
-      }
+    .problem-card.solution {
+      border-color: var(--success);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, transparent 100%);
+    }
 
-      input, textarea, select {
-        font-size: 16px !important;
-      }
+    .problem-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .problem-header svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .problem-card.problem .problem-header svg {
+      color: var(--danger);
+    }
+
+    .problem-card.solution .problem-header svg {
+      color: var(--success);
+    }
+
+    .problem-header h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .problem-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .problem-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .problem-list li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      margin-top: 8px;
+      border-radius: var(--radius-full);
+    }
+
+    .problem-card.problem .problem-list li::before {
+      background: var(--danger);
+    }
+
+    .problem-card.solution .problem-list li::before {
+      background: var(--success);
+    }
+
+    /* Compliance Badges */
+    .compliance-section {
+      margin-bottom: var(--space-12);
+    }
+
+    .compliance-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+      justify-content: center;
+    }
+
+    .compliance-badge {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+    }
+
+    .compliance-badge:hover {
+      border-color: var(--border-hover);
+      color: var(--brand);
+    }
+
+    .compliance-badge svg {
+      width: 18px;
+      height: 18px;
+      color: var(--brand);
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      text-align: center;
+      padding: var(--space-4);
+      background: var(--ink-800);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-12);
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: var(--space-8) 0;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 0.875rem;
+      color: var(--text-tertiary);
+    }
+
+    /* Intersection Observer Animation */
+    .animate-on-scroll {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    .animate-on-scroll.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="container">
-      <div class="header-content">
-        <a href="/" class="logo">
-          <span>🔐</span> BrightAI Kernel
-        </a>
-        <nav>
-          <a href="#features">Features</a>
-          <a href="/kernel/chat.html">Chat</a>
-          <a href="/kernel/stats.html">Statistics</a>
-          <a href="/kernel/approvals.html">Approvals</a>
-        </nav>
-      </div>
-    </div>
-  </header>
+  <a href="#main-content" class="skip-link">تخطي إلى المحتوى الرئيسي</a>
 
-  <main class="container">
+  <main id="main-content">
+    <!-- Hero Section -->
     <section class="hero">
-      <h1>Enterprise AI Governance for Saudi Arabia</h1>
-      <p>BrightAI Kernel combines advanced PII detection, governance pipelines, and tamper-proof audit trails for enterprise-grade AI safety and compliance.</p>
-      <div class="cta-buttons">
-        <a href="/kernel/chat.html" class="btn btn-primary">Start Chat</a>
-        <a href="/kernel/stats.html" class="btn btn-secondary">View Dashboard</a>
+      <div class="container">
+        <h1 class="hero-title">
+          <span class="text-gradient">نواة BrightAI</span>
+        </h1>
+        <p class="hero-subtitle">
+          طبقة أمان وحوكمة الذكاء الاصطناعي للمؤسسات السعودية. كشف البيانات الحساسة، تقييم المخاطر، وسلسلة تدقيق غير قابلة للتلاعب.
+        </p>
+        
+        <div class="hero-actions">
+          <a href="/kernel/chat.html" class="btn btn-primary btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            ابدأ المحادثة
+          </a>
+          <a href="/kernel/stats.html" class="btn btn-secondary btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            لوحة المعلومات
+          </a>
+          <a href="/kernel/scenarios.html" class="btn btn-gold btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+            </svg>
+            جرّب السيناريوهات
+          </a>
+          <a href="/kernel/approvals.html" class="btn btn-ghost btn-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            الموافقات
+          </a>
+        </div>
+
+        <!-- Provider Status Banner -->
+        <div class="provider-banner" id="provider-banner">
+          <span class="provider-dot"></span>
+          <span id="provider-status">جاري التحقق من حالة المزود...</span>
+        </div>
       </div>
     </section>
 
-    <section id="features" class="features">
-      <div class="feature-card">
-        <h3>🔍 PII Detection</h3>
-        <p>Detects 13+ personally identifiable information patterns including Arabic names, Saudi National IDs, VAT numbers, and financial data.</p>
-      </div>
-      <div class="feature-card">
-        <h3>⚖️ Governance Pipeline</h3>
-        <p>13-step AI governance pipeline with risk scoring, compliance matching, and approval workflows.</p>
-      </div>
-      <div class="feature-card">
-        <h3>🛡️ Audit Chain</h3>
-        <p>Tamper-proof audit logging with SHA-256 chain linking for complete request traceability.</p>
-      </div>
-      <div class="feature-card">
-        <h3>🤖 Provider Gateway</h3>
-        <p>Intelligent LLM provider selection with exponential backoff and automatic fallback to ensure reliability.</p>
-      </div>
-      <div class="feature-card">
-        <h3>📊 Risk Assessment</h3>
-        <p>Real-time risk scoring with compliance rule matching and strategic approval requirements.</p>
-      </div>
-      <div class="feature-card">
-        <h3>🌍 Arabic Support</h3>
-        <p>Full RTL support with IBM Plex Sans Arabic for complete Arabic language compatibility.</p>
+    <!-- Stats Section -->
+    <section class="container animate-on-scroll">
+      <div class="stats-grid">
+        <div class="glass-card stat-card">
+          <div class="stat-value" id="stat-total">
+            <span class="skeleton" style="width: 60px; height: 40px; display: inline-block;"></span>
+          </div>
+          <div class="stat-label">إجمالي الطلبات</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-value" id="stat-pending">
+            <span class="skeleton" style="width: 40px; height: 40px; display: inline-block;"></span>
+          </div>
+          <div class="stat-label">بانتظار الموافقة</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-value" id="stat-risk">
+            <span class="skeleton" style="width: 50px; height: 40px; display: inline-block;"></span>
+          </div>
+          <div class="stat-label">متوسط المخاطر</div>
+        </div>
+        <div class="glass-card stat-card">
+          <div class="stat-value" id="stat-pii">
+            <span class="skeleton" style="width: 50px; height: 40px; display: inline-block;"></span>
+          </div>
+          <div class="stat-label">نسبة كشف PII</div>
+        </div>
       </div>
     </section>
 
-    <section class="stats">
-      <div class="stat-box">
-        <div class="stat-number" id="stat-requests">0</div>
-        <div class="stat-label">Total Requests</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-number" id="stat-pending">0</div>
-        <div class="stat-label">Pending Approvals</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-number" id="stat-risk">0%</div>
-        <div class="stat-label">Avg Risk Score</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-number" id="stat-pii">0%</div>
-        <div class="stat-label">PII Detection Rate</div>
+    <!-- Navigation Cards -->
+    <section class="container animate-on-scroll">
+      <div class="nav-cards-grid" id="nav-cards">
+        <!-- Cards will be rendered by JavaScript -->
       </div>
     </section>
+
+    <!-- Features Section -->
+    <section class="features-section container animate-on-scroll">
+      <h2 class="section-title">المزايا الأساسية</h2>
+      <p class="section-subtitle">تقنيات متقدمة لحماية مؤسستك وضمان الامتثال</p>
+      
+      <div class="features-grid" id="features-grid">
+        <!-- Features will be rendered by JavaScript -->
+      </div>
+    </section>
+
+    <!-- Problems & Solutions -->
+    <section class="problems-section container animate-on-scroll">
+      <h2 class="section-title">التحديات والحلول</h2>
+      <p class="section-subtitle">كيف تساعدك نواة BrightAI في مواجهة تحديات الذكاء الاصطناعي المؤسسي</p>
+      
+      <div class="problems-grid">
+        <div class="glass-card problem-card problem">
+          <div class="problem-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <h4>التحديات</h4>
+          </div>
+          <ul class="problem-list">
+            <li>تسرب البيانات الحساسة عبر نماذج الذكاء الاصطناعي</li>
+            <li>صعوبة تتبع القرارات والمسؤوليات</li>
+            <li>عدم الامتثال للوائح حماية البيانات السعودية</li>
+            <li>غياب الرقابة على طلبات الذكاء الاصطناعي عالية المخاطر</li>
+            <li>عدم وجود سجل تدقيق موثوق للأدلة</li>
+          </ul>
+        </div>
+        
+        <div class="glass-card problem-card solution">
+          <div class="problem-header">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+            <h4>حلول BrightAI</h4>
+          </div>
+          <ul class="problem-list">
+            <li>كشف وإخفاء البيانات الحساسة قبل إرسالها للنموذج</li>
+            <li>سلسلة تدقيق مشفرة غير قابلة للتلاعب</li>
+            <li>مواءمة تلقائية مع PDPL و NCA ECC و SFDA</li>
+            <li>سير موافقات متعدد المستويات للطلبات الحرجة</li>
+            <li>تقارير أدلة جاهزة للتدقيق والمراجعة</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compliance Badges -->
+    <section class="compliance-section container animate-on-scroll">
+      <h2 class="section-title">مواءمة الامتثال</h2>
+      <p class="section-subtitle">دعم داخلي للأطر التنظيمية السعودية والدولية</p>
+      
+      <div class="compliance-badges">
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          PDPL
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          NCA ECC
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          SFDA
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Healthcare
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Vision 2030
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          ISO 27001
+        </div>
+        <div class="compliance-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          ISO 42001
+        </div>
+      </div>
+      
+      <div class="disclaimer">
+        هذه المواءمة داخلية لدعم الحوكمة ولا تمثل شهادة امتثال رسمية. يُرجى استشارة خبراء الامتثال للحصول على شهادات معتمدة.
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <p class="footer-text">
+          &copy; 2024 نواة BrightAI. منصة حوكمة الذكاء الاصطناعي المؤسسية.
+        </p>
+      </div>
+    </footer>
   </main>
 
-  <footer>
-    <div class="container">
-      <p>&copy; 2024 BrightAI Kernel. Enterprise AI Governance Platform.</p>
-    </div>
-  </footer>
-
-  <script src="/kernel/js/api-client.js"></script>
+  <!-- Scripts -->
+  <script src="/kernel/assets/js/kernel-utils.js"></script>
+  <script src="/kernel/assets/js/kernel-api.js"></script>
+  <script src="/kernel/assets/js/kernel-nav.js"></script>
+  
   <script>
+    // Navigation cards data
+    const navCardsData = [
+      {
+        href: '/kernel/chat.html',
+        icon: '<path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>',
+        title: 'المحادثة الآمنة',
+        desc: 'تواصل مع الذكاء الاصطناعي بحماية كاملة لبياناتك الحساسة'
+      },
+      {
+        href: '/kernel/stats.html',
+        icon: '<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
+        title: 'الإحصائيات',
+        desc: 'لوحة معلومات شاملة لمراقبة النظام والأداء'
+      },
+      {
+        href: '/kernel/approvals.html',
+        icon: '<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>',
+        title: 'الموافقات',
+        desc: 'مراجعة واعتماد الطلبات عالية المخاطر'
+      },
+      {
+        href: '/kernel/audit.html',
+        icon: '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>',
+        title: 'سجل التدقيق',
+        desc: 'سلسلة تدقيق مشفرة وغير قابلة للتلاعب'
+      },
+      {
+        href: '/kernel/evidence.html',
+        icon: '<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
+        title: 'الأدلة',
+        desc: 'سجلات أدلة جاهزة للتدقيق والمراجعة',
+        isNew: true
+      },
+      {
+        href: '/kernel/reports.html',
+        icon: '<path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
+        title: 'التقارير',
+        desc: 'تقارير تفصيلية قابلة للتصدير والطباعة',
+        isNew: true
+      },
+      {
+        href: '/kernel/scenarios.html',
+        icon: '<path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>',
+        title: 'السيناريوهات',
+        desc: 'محاكاة سيناريوهات واقعية لاختبار النظام'
+      },
+      {
+        href: '/kernel/compliance.html',
+        icon: '<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>',
+        title: 'الامتثال',
+        desc: 'حزم الامتثال للأطر التنظيمية المختلفة'
+      },
+      {
+        href: '/kernel/policies.html',
+        icon: '<path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>',
+        title: 'السياسات',
+        desc: 'قواعد وسياسات الحوكمة القابلة للتخصيص'
+      },
+      {
+        href: '/kernel/connectors.html',
+        icon: '<path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>',
+        title: 'الموصلات',
+        desc: 'تكامل مع أنظمة ERP و CRM و HIS والمزيد'
+      }
+    ];
+
+    // Features data
+    const featuresData = [
+      {
+        icon: '<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>',
+        title: 'كشف البيانات الحساسة',
+        desc: 'كشف 13+ نمط PII تشمل الهوية الوطنية والإقامة والجوال والبريد الإلكتروني والبيانات المالية والصحية'
+      },
+      {
+        icon: '<path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
+        title: 'تقييم المخاطر',
+        desc: 'تسجيل درجة المخاطر 0-100 مع مطابقة قواعد الامتثال وتحديد مستوى الموافقة المطلوب'
+      },
+      {
+        icon: '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>',
+        title: 'سلسلة التدقيق',
+        desc: 'تسجيل SHA-256 متسلسل لكل عملية مع ربط الهاش لضمان عدم التلاعب'
+      },
+      {
+        icon: '<path d="M13 10V3L4 14h7v7l9-11h-7z"/>',
+        title: 'بوابة المزودات الذكية',
+        desc: 'NVIDIA MiniMax كمزود أساسي مع Fallback تلقائي وexponential backoff'
+      },
+      {
+        icon: '<path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>',
+        title: 'سير الموافقات',
+        desc: 'سير موافقات متعدد المستويات مع SLA ومتابعة حالة كل طلب حتى التنفيذ'
+      },
+      {
+        icon: '<path d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>',
+        title: 'دعم اللغة العربية',
+        desc: 'واجهة RTL كاملة مع خط IBM Plex Sans Arabic وتوافق تام مع اللغة العربية'
+      }
+    ];
+
+    // Render navigation cards
+    function renderNavCards() {
+      const container = document.getElementById('nav-cards');
+      if (!container) return;
+
+      container.innerHTML = navCardsData.map(card => `
+        <a href="${card.href}" class="glass-card nav-card">
+          ${card.isNew ? '<span class="badge badge-new">جديد</span>' : ''}
+          <div class="nav-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${card.icon}
+            </svg>
+          </div>
+          <h3 class="nav-card-title">${card.title}</h3>
+          <p class="nav-card-desc">${card.desc}</p>
+        </a>
+      `).join('');
+    }
+
+    // Render features
+    function renderFeatures() {
+      const container = document.getElementById('features-grid');
+      if (!container) return;
+
+      container.innerHTML = featuresData.map(feature => `
+        <div class="glass-card-flat feature-card">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              ${feature.icon}
+            </svg>
+          </div>
+          <div class="feature-content">
+            <h4>${feature.title}</h4>
+            <p>${feature.desc}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Load and display stats
     async function loadStats() {
       try {
-        const response = await fetch('/api/stats');
+        const response = await fetch('/api/kernel/stats');
+        if (!response.ok) throw new Error('Failed to load stats');
+        
         const data = await response.json();
         
-        document.getElementById('stat-requests').textContent = data.statistics.totalRequests;
-        document.getElementById('stat-pending').textContent = data.statistics.pendingRequests;
-        document.getElementById('stat-risk').textContent = Math.round(data.statistics.averageRiskScore) + '%';
-        document.getElementById('stat-pii').textContent = data.piiDetectionRate + '%';
+        // Animate counters
+        const totalEl = document.getElementById('stat-total');
+        const pendingEl = document.getElementById('stat-pending');
+        const riskEl = document.getElementById('stat-risk');
+        const piiEl = document.getElementById('stat-pii');
+
+        if (totalEl && typeof KernelUtils !== 'undefined') {
+          KernelUtils.animateCount(totalEl, 0, data.statistics?.totalRequests || 0, 1000);
+        } else if (totalEl) {
+          totalEl.textContent = data.statistics?.totalRequests || '0';
+        }
+
+        if (pendingEl && typeof KernelUtils !== 'undefined') {
+          KernelUtils.animateCount(pendingEl, 0, data.statistics?.pendingRequests || 0, 1000);
+        } else if (pendingEl) {
+          pendingEl.textContent = data.statistics?.pendingRequests || '0';
+        }
+
+        if (riskEl && typeof KernelUtils !== 'undefined') {
+          KernelUtils.animateCount(riskEl, 0, Math.round(data.statistics?.averageRiskScore || 0), 1000, '%');
+        } else if (riskEl) {
+          riskEl.textContent = Math.round(data.statistics?.averageRiskScore || 0) + '%';
+        }
+
+        if (piiEl && typeof KernelUtils !== 'undefined') {
+          KernelUtils.animateCount(piiEl, 0, data.piiDetectionRate || 0, 1000, '%');
+        } else if (piiEl) {
+          piiEl.textContent = (data.piiDetectionRate || 0) + '%';
+        }
       } catch (error) {
-        console.log('[v0] Failed to load stats:', error);
+        // Show zeros on error
+        const elements = ['stat-total', 'stat-pending', 'stat-risk', 'stat-pii'];
+        elements.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = id.includes('risk') || id.includes('pii') ? '0%' : '0';
+        });
       }
     }
 
-    loadStats();
-    setInterval(loadStats, 5000);
+    // Check provider status
+    async function checkProviderStatus() {
+      const banner = document.getElementById('provider-banner');
+      const statusText = document.getElementById('provider-status');
+      
+      if (!banner || !statusText) return;
+
+      try {
+        const response = await fetch('/api/kernel/health');
+        if (!response.ok) throw new Error('Health check failed');
+        
+        const data = await response.json();
+        
+        if (data.provider?.configured && data.provider?.name !== 'demo') {
+          banner.className = 'provider-banner active';
+          statusText.textContent = `${data.provider.model || 'NVIDIA MiniMax M2.7'} نشط`;
+        } else {
+          banner.className = 'provider-banner demo';
+          statusText.textContent = 'وضع تجريبي — أضف NVIDIA_API_KEY للتفعيل';
+        }
+      } catch (error) {
+        banner.className = 'provider-banner demo';
+        statusText.textContent = 'وضع تجريبي — أضف NVIDIA_API_KEY للتفعيل';
+      }
+    }
+
+    // Intersection Observer for animations
+    function setupScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: '50px'
+      });
+
+      document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        observer.observe(el);
+      });
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      renderNavCards();
+      renderFeatures();
+      loadStats();
+      checkProviderStatus();
+      setupScrollAnimations();
+      
+      // Refresh stats periodically
+      setInterval(loadStats, 30000);
+    });
   </script>
 </body>
 </html>
