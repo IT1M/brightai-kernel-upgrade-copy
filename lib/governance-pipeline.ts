@@ -2,9 +2,75 @@
 // Risk assessment and approval workflow management
 
 import { PIIResult } from './pii-detection';
-import { getCompliancePackage, shouldAutoBlock, getRiskThreshold, type CompliancePackage } from './compliance-packages';
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+// Compliance package configurations (inline - no external dependency)
+interface CompliancePackage {
+  id: string;
+  name: string;
+  fullNameAr: string;
+  piiTypes: string[];
+  riskThreshold: number;
+  autoBlockTypes: string[];
+}
+
+const COMPLIANCE_PACKAGES: Record<string, CompliancePackage> = {
+  general: {
+    id: 'general',
+    name: 'General',
+    fullNameAr: 'عام',
+    piiTypes: ['email', 'phone', 'name'],
+    riskThreshold: 40,
+    autoBlockTypes: [],
+  },
+  pdpl: {
+    id: 'pdpl',
+    name: 'PDPL',
+    fullNameAr: 'نظام حماية البيانات الشخصية',
+    piiTypes: ['saudi_id', 'phone_sa', 'iqama', 'saudi_iban', 'email'],
+    riskThreshold: 30,
+    autoBlockTypes: ['saudi_id', 'saudi_iban'],
+  },
+  gdpr: {
+    id: 'gdpr',
+    name: 'GDPR',
+    fullNameAr: 'اللائحة العامة لحماية البيانات',
+    piiTypes: ['email', 'phone', 'name', 'ip_address'],
+    riskThreshold: 35,
+    autoBlockTypes: [],
+  },
+  hipaa: {
+    id: 'hipaa',
+    name: 'HIPAA',
+    fullNameAr: 'قانون حماية البيانات الصحية',
+    piiTypes: ['medical_id', 'ssn', 'health_info'],
+    riskThreshold: 25,
+    autoBlockTypes: ['medical_id', 'ssn'],
+  },
+  pci: {
+    id: 'pci',
+    name: 'PCI DSS',
+    fullNameAr: 'معيار أمان بيانات البطاقات',
+    piiTypes: ['credit_card', 'cvv', 'bank_account'],
+    riskThreshold: 20,
+    autoBlockTypes: ['credit_card', 'cvv'],
+  },
+};
+
+function getCompliancePackage(id: string): CompliancePackage {
+  return COMPLIANCE_PACKAGES[id] || COMPLIANCE_PACKAGES.general;
+}
+
+function shouldAutoBlock(packageId: string, piiType: string): boolean {
+  const pkg = getCompliancePackage(packageId);
+  return pkg.autoBlockTypes.includes(piiType);
+}
+
+function getRiskThreshold(packageId: string): number {
+  const pkg = getCompliancePackage(packageId);
+  return pkg.riskThreshold;
+}
 
 export interface RiskAssessment {
   level: RiskLevel;

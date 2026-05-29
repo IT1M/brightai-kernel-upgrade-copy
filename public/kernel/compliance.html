@@ -454,94 +454,9 @@
   <script src="/kernel/assets/js/kernel-utils.js"></script>
   <script src="/kernel/assets/js/kernel-nav.js"></script>
   <script src="/kernel/assets/js/kernel-api.js"></script>
+  <script src="/kernel/assets/js/kernel-compliance.js"></script>
   <script src="/kernel/assets/js/kernel-mobile.js"></script>
   <script>
-    // Compliance Packages Configuration with real logic
-    const COMPLIANCE_PACKAGES = {
-      pdpl: {
-        id: 'pdpl',
-        name: 'PDPL',
-        fullName: 'نظام حماية البيانات الشخصية',
-        region: 'المملكة العربية السعودية',
-        color: '#10b981',
-        requirements: [
-          { id: 'consent', name: 'الموافقة على معالجة البيانات', weight: 25 },
-          { id: 'access', name: 'حق الوصول والتصحيح', weight: 20 },
-          { id: 'breach', name: 'الإخطار بالانتهاكات', weight: 20 },
-          { id: 'retention', name: 'سياسة الاحتفاظ بالبيانات', weight: 15 },
-          { id: 'transfer', name: 'نقل البيانات العابر للحدود', weight: 20 },
-        ],
-        piiTypes: ['saudi_id', 'phone_sa', 'iqama', 'saudi_iban'],
-      },
-      gdpr: {
-        id: 'gdpr',
-        name: 'GDPR',
-        fullName: 'اللائحة العامة لحماية البيانات',
-        region: 'الاتحاد الأوروبي',
-        color: '#3b82f6',
-        requirements: [
-          { id: 'forget', name: 'حق النسيان', weight: 20 },
-          { id: 'portability', name: 'نقل البيانات', weight: 20 },
-          { id: 'documentation', name: 'توثيق المعالجة', weight: 25 },
-          { id: 'dpo', name: 'مسؤول حماية البيانات', weight: 15 },
-          { id: 'impact', name: 'تقييم الأثر', weight: 20 },
-        ],
-        piiTypes: ['email', 'phone', 'name', 'ip_address'],
-      },
-      hipaa: {
-        id: 'hipaa',
-        name: 'HIPAA',
-        fullName: 'قانون حماية البيانات الصحية',
-        region: 'الولايات المتحدة',
-        color: '#8b5cf6',
-        requirements: [
-          { id: 'encryption', name: 'تشفير البيانات الصحية', weight: 30 },
-          { id: 'access_logs', name: 'سجلات الوصول', weight: 25 },
-          { id: 'baa', name: 'اتفاقيات الشركاء', weight: 25 },
-          { id: 'training', name: 'تدريب الموظفين', weight: 20 },
-        ],
-        piiTypes: ['medical_id', 'ssn', 'health_info'],
-      },
-      pci: {
-        id: 'pci',
-        name: 'PCI DSS',
-        fullName: 'معيار أمان بيانات البطاقات',
-        region: 'عالمي',
-        color: '#f97316',
-        requirements: [
-          { id: 'card_protection', name: 'حماية بيانات البطاقات', weight: 35 },
-          { id: 'transit_encryption', name: 'التشفير أثناء النقل', weight: 25 },
-          { id: 'pen_test', name: 'اختبارات الاختراق', weight: 20 },
-          { id: 'monitoring', name: 'المراقبة المستمرة', weight: 20 },
-        ],
-        piiTypes: ['credit_card', 'cvv', 'bank_account'],
-      },
-      iso27001: {
-        id: 'iso27001',
-        name: 'ISO 27001',
-        fullName: 'ISO 27001 أمن المعلومات',
-        region: 'عالمي',
-        color: '#6b7280',
-        requirements: [
-          { id: 'policy', name: 'سياسة أمن المعلومات', weight: 25 },
-          { id: 'risk_mgmt', name: 'إدارة المخاطر', weight: 25 },
-          { id: 'internal_audit', name: 'التدقيق الداخلي', weight: 25 },
-          { id: 'incident', name: 'إدارة الحوادث', weight: 25 },
-        ],
-        piiTypes: ['api_key', 'password', 'secret'],
-      },
-    };
-
-    // Compliance state - simulated compliance scores
-    // In production, this would come from actual system metrics
-    const complianceState = {
-      pdpl: { score: 98, status: 'compliant', requirementScores: { consent: 100, access: 100, breach: 95, retention: 95, transfer: 100 } },
-      gdpr: { score: 95, status: 'compliant', requirementScores: { forget: 100, portability: 100, documentation: 85, dpo: 100, impact: 90 } },
-      hipaa: { score: 78, status: 'partial', requirementScores: { encryption: 100, access_logs: 80, baa: 50, training: 80 } },
-      pci: { score: 100, status: 'compliant', requirementScores: { card_protection: 100, transit_encryption: 100, pen_test: 100, monitoring: 100 } },
-      iso27001: { score: 92, status: 'compliant', requirementScores: { policy: 100, risk_mgmt: 100, internal_audit: 75, incident: 95 } },
-    };
-
     document.addEventListener('DOMContentLoaded', () => {
       if (window.KernelNav) {
         KernelNav.init('sidebarNav');
@@ -556,27 +471,16 @@
     });
 
     function loadComplianceData() {
-      // Calculate overall compliance
-      const scores = Object.values(complianceState).map(s => s.score);
-      const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-      const metRequirements = Object.values(complianceState).reduce((sum, s) => {
-        return sum + Object.values(s.requirementScores).filter(score => score >= 80).length;
-      }, 0);
-      const totalRequirements = Object.values(COMPLIANCE_PACKAGES).reduce((sum, p) => sum + p.requirements.length, 0);
-      const needsReview = Object.values(complianceState).reduce((sum, s) => {
-        return sum + Object.values(s.requirementScores).filter(score => score < 80 && score >= 50).length;
-      }, 0);
+      // Use KernelCompliance module
+      const avgScore = KernelCompliance.calculateOverallScore();
+      const { met: metRequirements, total: totalRequirements } = KernelCompliance.calculateMetRequirements();
+      const needsReview = KernelCompliance.calculateNeedsReview();
 
       // Update overview stats
-      document.querySelector('.compliance-stat-value.green')?.closest('.compliance-stat')?.querySelector('.compliance-stat-value')
-        && (document.querySelectorAll('.compliance-stat-value')[0].textContent = avgScore + '%');
-      
-      if (document.querySelectorAll('.compliance-stat-value')[2]) {
-        document.querySelectorAll('.compliance-stat-value')[2].textContent = metRequirements;
-      }
-      if (document.querySelectorAll('.compliance-stat-value')[3]) {
-        document.querySelectorAll('.compliance-stat-value')[3].textContent = needsReview;
-      }
+      const statValues = document.querySelectorAll('.compliance-stat-value');
+      if (statValues[0]) statValues[0].textContent = avgScore + '%';
+      if (statValues[2]) statValues[2].textContent = metRequirements;
+      if (statValues[3]) statValues[3].textContent = needsReview;
 
       // Render framework cards dynamically
       renderFrameworkCards();
@@ -586,77 +490,17 @@
       const grid = document.querySelector('.frameworks-grid');
       if (!grid) return;
 
-      grid.innerHTML = Object.entries(COMPLIANCE_PACKAGES).map(([key, pkg]) => {
-        const state = complianceState[key];
-        const statusLabel = state.status === 'compliant' ? 'ممتثل' : state.status === 'partial' ? 'جزئي' : 'غير ممتثل';
-        const statusClass = state.status === 'compliant' ? 'compliant' : state.status === 'partial' ? 'partial' : 'non-compliant';
-        const progressColor = state.score >= 90 ? 'green' : state.score >= 70 ? 'yellow' : 'red';
-
-        const requirementsHtml = pkg.requirements.map(req => {
-          const reqScore = state.requirementScores[req.id] || 0;
-          const reqStatus = reqScore >= 80 ? 'met' : reqScore >= 50 ? 'partial' : 'unmet';
-          const icon = reqStatus === 'met' 
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>'
-            : reqStatus === 'partial'
-            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>'
-            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-          
-          return `<div class="requirement-item ${reqStatus}">${icon}${req.name}</div>`;
-        }).join('');
-
-        return `
-          <div class="framework-card" data-package="${key}">
-            <div class="framework-header">
-              <div class="framework-info">
-                <div class="framework-logo" style="background: ${pkg.color}; color: white;">${pkg.name.substring(0, 4)}</div>
-                <span class="framework-name">${pkg.fullName}</span>
-              </div>
-              <span class="framework-badge ${statusClass}">${statusLabel}</span>
-            </div>
-            <div class="framework-body">
-              <div class="framework-progress">
-                <div class="progress-header">
-                  <span class="progress-label">نسبة الامتثال</span>
-                  <span class="progress-value">${state.score}%</span>
-                </div>
-                <div class="progress-bar">
-                  <div class="progress-fill ${progressColor}" style="width: ${state.score}%"></div>
-                </div>
-              </div>
-              <div class="framework-requirements">${requirementsHtml}</div>
-            </div>
-            <div class="framework-footer">
-              <span class="framework-date">آخر تقييم: ${new Date().toLocaleDateString('ar-SA')}</span>
-              <button class="framework-btn" onclick="showFrameworkDetails('${key}')">عرض التفاصيل</button>
-            </div>
-          </div>
-        `;
-      }).join('');
+      const packages = KernelCompliance.getAllPackages();
+      grid.innerHTML = packages.map(pkg => KernelCompliance.renderFrameworkCard(pkg.id)).join('');
     }
 
     function renderDisclaimer() {
-      // Add disclaimer banner at the top
       const mainContent = document.querySelector('.main-content');
       if (!mainContent) return;
 
       const disclaimer = document.createElement('div');
-      disclaimer.className = 'compliance-disclaimer';
-      disclaimer.innerHTML = `
-        <div class="disclaimer-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <div class="disclaimer-content">
-          <strong>تنويه مهم:</strong>
-          هذه الأداة توفر تقييماً آلياً لمستوى الامتثال بناءً على الإعدادات الحالية للنظام. 
-          <strong>النتائج المعروضة ليست شهادة امتثال رسمية</strong> ولا تحل محل التدقيق المعتمد من جهات الاعتماد المرخصة.
-          للحصول على شهادة امتثال رسمية، يرجى التواصل مع جهة تدقيق معتمدة.
-        </div>
-      `;
-      mainContent.insertBefore(disclaimer, mainContent.firstChild);
+      disclaimer.innerHTML = KernelCompliance.renderDisclaimer();
+      mainContent.insertBefore(disclaimer.firstElementChild, mainContent.firstChild);
 
       // Add disclaimer styles
       const style = document.createElement('style');
@@ -694,12 +538,7 @@
     }
 
     function showFrameworkDetails(packageId) {
-      const pkg = COMPLIANCE_PACKAGES[packageId];
-      const state = complianceState[packageId];
-      if (!pkg || !state) return;
-
-      // Show details modal or navigate to details page
-      alert(`تفاصيل ${pkg.fullName}\n\nنسبة الامتثال: ${state.score}%\nالحالة: ${state.status === 'compliant' ? 'ممتثل' : 'جزئي'}\n\nللحصول على تقرير مفصل، استخدم صفحة التقارير.`);
+      KernelCompliance.showDetails(packageId);
     }
 
     document.getElementById('menuToggle')?.addEventListener('click', () => {
