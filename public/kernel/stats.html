@@ -10,7 +10,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="/kernel/assets/css/kernel.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     .page-header {
       padding: var(--space-8) 0 var(--space-6);
@@ -364,7 +363,7 @@
             </div>
           </div>
           <div class="chart-canvas-wrap">
-            <canvas id="status-donut-chart"></canvas>
+            <div id="status-donut-chart" class="svg-donut-container"></div>
           </div>
         </div>
 
@@ -437,7 +436,6 @@
   <script src="/kernel/assets/js/kernel-nav.js"></script>
 
   <script>
-    let donutChart = null;
     let refreshTimer = null;
 
     const RISK_LEVELS = [
@@ -445,8 +443,23 @@
       { key: 'high', label: 'مرتفع' },
       { key: 'medium', label: 'متوسط' },
       { key: 'low', label: 'منخفض' },
-      { key: 'minimal', label: 'ضئيل' },
     ];
+
+    const STATUS_COLORS = {
+      pending: 'rgba(245, 158, 11, 0.85)',
+      approved: 'rgba(0, 212, 255, 0.85)',
+      executed: 'rgba(167, 139, 250, 0.85)',
+      completed: 'rgba(16, 185, 129, 0.85)',
+      rejected: 'rgba(239, 68, 68, 0.85)',
+    };
+
+    const STATUS_LABELS = {
+      pending: 'بانتظار المراجعة',
+      approved: 'تمت الموافقة',
+      executed: 'قيد التنفيذ',
+      completed: 'مكتملة',
+      rejected: 'مرفوضة',
+    };
 
     document.addEventListener('DOMContentLoaded', () => {
       loadStats();
@@ -459,56 +472,53 @@
         renderStats(data);
       } catch (err) {
         console.log('[v0] Failed to load stats:', err);
-        // Show demo data on failure
         renderStats(buildDemoData());
       }
     }
 
     function buildDemoData() {
       return {
-        statistics: {
-          totalRequests: 247,
-          pendingRequests: 12,
-          averageRiskScore: 38,
-        },
-        piiDetectionRate: 24,
-        breakdown: {
+        requests: {
+          total: 247,
           pending: 12,
           approved: 8,
           executed: 5,
           completed: 198,
-          rejected: 24,
         },
+        provider: {
+          averageLatency: 850,
+        },
+        piiDetectionRate: 24,
         riskDistribution: {
           critical: 7,
           high: 19,
           medium: 63,
           low: 112,
-          minimal: 46,
         },
       };
     }
 
     function renderStats(data) {
-      const stats = data.statistics || {};
-      const breakdown = data.breakdown || {};
+      const requests = data.requests || {};
       const riskDist = data.riskDistribution || {};
 
       // KPIs
-      document.getElementById('kpi-total').textContent = KernelUtils.formatNumber(stats.totalRequests || 0);
-      document.getElementById('kpi-pending').textContent = KernelUtils.formatNumber(stats.pendingRequests || 0);
-      document.getElementById('kpi-risk').textContent = Math.round(stats.averageRiskScore || 0) + '%';
+      document.getElementById('kpi-total').textContent = KernelUtils.formatNumber(requests.total || 0);
+      document.getElementById('kpi-pending').textContent = KernelUtils.formatNumber(requests.pending || 0);
+      
+      const avgRisk = calculateAverageRisk(riskDist);
+      document.getElementById('kpi-risk').textContent = avgRisk + '%';
       document.getElementById('kpi-pii').textContent = (data.piiDetectionRate || 0) + '%';
 
       // Status Cards
-      document.getElementById('sc-pending').textContent = KernelUtils.formatNumber(breakdown.pending || 0);
-      document.getElementById('sc-approved').textContent = KernelUtils.formatNumber(breakdown.approved || 0);
-      document.getElementById('sc-executed').textContent = KernelUtils.formatNumber(breakdown.executed || 0);
-      document.getElementById('sc-completed').textContent = KernelUtils.formatNumber(breakdown.completed || 0);
-      document.getElementById('sc-rejected').textContent = KernelUtils.formatNumber(breakdown.rejected || 0);
+      document.getElementById('sc-pending').textContent = KernelUtils.formatNumber(requests.pending || 0);
+      document.getElementById('sc-approved').textContent = KernelUtils.formatNumber(requests.approved || 0);
+      document.getElementById('sc-executed').textContent = KernelUtils.formatNumber(requests.executed || 0);
+      document.getElementById('sc-completed').textContent = KernelUtils.formatNumber(requests.completed || 0);
+      document.getElementById('sc-rejected').textContent = KernelUtils.formatNumber(0);
 
-      // Donut Chart
-      renderDonut(breakdown);
+      // SVG Donut Chart
+      renderSVGDonut(requests);
 
       // Risk Bars
       renderRiskBars(riskDist);
@@ -517,69 +527,92 @@
       document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-SA');
     }
 
-    function renderDonut(breakdown) {
-      const ctx = document.getElementById('status-donut-chart');
-      if (!ctx) return;
-
-      const values = [
-        breakdown.pending || 0,
-        breakdown.approved || 0,
-        breakdown.executed || 0,
-        breakdown.completed || 0,
-        breakdown.rejected || 0,
-      ];
-
-      const config = {
-        type: 'doughnut',
-        data: {
-          labels: ['بانتظار المراجعة', 'تمت الموافقة', 'قيد التنفيذ', 'مكتملة', 'مرفوضة'],
-          datasets: [{
-            data: values,
-            backgroundColor: [
-              'rgba(245, 158, 11, 0.85)',
-              'rgba(0, 212, 255, 0.85)',
-              'rgba(167, 139, 250, 0.85)',
-              'rgba(16, 185, 129, 0.85)',
-              'rgba(239, 68, 68, 0.85)',
-            ],
-            borderColor: '#0B1628',
-            borderWidth: 3,
-            hoverOffset: 6,
-          }],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '68%',
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#94A3B8',
-                font: { family: "'IBM Plex Sans Arabic', sans-serif", size: 11 },
-                padding: 12,
-                usePointStyle: true,
-                pointStyleWidth: 8,
-              },
-            },
-            tooltip: {
-              rtl: true,
-              bodyFont: { family: "'IBM Plex Sans Arabic', sans-serif" },
-              titleFont: { family: "'IBM Plex Sans Arabic', sans-serif" },
-              callbacks: {
-                label: (ctx) => ` ${ctx.label}: ${KernelUtils.formatNumber(ctx.raw)}`,
-              },
-            },
-          },
-        },
-      };
-
-      if (donutChart) {
-        donutChart.data.datasets[0].data = values;
-        donutChart.update('active');
-      } else {
-        donutChart = new Chart(ctx, config);
+    function calculateAverageRisk(dist) {
+      const weights = { critical: 100, high: 75, medium: 50, low: 25 };
+      let total = 0, weighted = 0;
+      for (const [k, v] of Object.entries(dist)) {
+        total += v || 0;
+        weighted += (v || 0) * (weights[k] || 0);
       }
+      return total > 0 ? Math.round(weighted / total) : 0;
+    }
+
+    function renderSVGDonut(breakdown) {
+      const container = document.getElementById('status-donut-chart');
+      if (!container) return;
+
+      const data = [
+        { key: 'pending', value: breakdown.pending || 0 },
+        { key: 'approved', value: breakdown.approved || 0 },
+        { key: 'executed', value: breakdown.executed || 0 },
+        { key: 'completed', value: breakdown.completed || 0 },
+        { key: 'rejected', value: 0 },
+      ].filter(d => d.value > 0);
+
+      const total = data.reduce((s, d) => s + d.value, 0) || 1;
+      const size = 200;
+      const cx = size / 2;
+      const cy = size / 2;
+      const outerR = 85;
+      const innerR = 58;
+
+      let cumulativeAngle = -90; // Start from top
+      const paths = data.map(d => {
+        const angle = (d.value / total) * 360;
+        const startAngle = cumulativeAngle;
+        const endAngle = cumulativeAngle + angle;
+        cumulativeAngle = endAngle;
+
+        const startOuter = polarToCartesian(cx, cy, outerR, startAngle);
+        const endOuter = polarToCartesian(cx, cy, outerR, endAngle);
+        const startInner = polarToCartesian(cx, cy, innerR, endAngle);
+        const endInner = polarToCartesian(cx, cy, innerR, startAngle);
+
+        const largeArc = angle > 180 ? 1 : 0;
+        const pathD = [
+          `M ${startOuter.x} ${startOuter.y}`,
+          `A ${outerR} ${outerR} 0 ${largeArc} 1 ${endOuter.x} ${endOuter.y}`,
+          `L ${startInner.x} ${startInner.y}`,
+          `A ${innerR} ${innerR} 0 ${largeArc} 0 ${endInner.x} ${endInner.y}`,
+          'Z'
+        ].join(' ');
+
+        return `<path d="${pathD}" fill="${STATUS_COLORS[d.key]}" stroke="#0B1628" stroke-width="2">
+          <title>${STATUS_LABELS[d.key]}: ${d.value}</title>
+        </path>`;
+      }).join('');
+
+      // Center text
+      const centerText = `
+        <text x="${cx}" y="${cy - 8}" text-anchor="middle" fill="#F8FAFC" font-size="24" font-weight="700" font-family="'IBM Plex Sans Arabic', sans-serif">${KernelUtils.formatNumber(total)}</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" fill="#64748B" font-size="11" font-family="'IBM Plex Sans Arabic', sans-serif">إجمالي</text>
+      `;
+
+      // Legend
+      const legendItems = data.map((d, i) => `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:${STATUS_COLORS[d.key]}"></span>
+          <span style="color:#94A3B8;font-size:11px;">${STATUS_LABELS[d.key]} (${d.value})</span>
+        </div>
+      `).join('');
+
+      container.innerHTML = `
+        <svg viewBox="0 0 ${size} ${size}" width="100%" height="200" style="display:block;margin:0 auto;">
+          ${paths}
+          ${centerText}
+        </svg>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:16px;">
+          ${legendItems}
+        </div>
+      `;
+    }
+
+    function polarToCartesian(cx, cy, r, angleDeg) {
+      const angleRad = (angleDeg * Math.PI) / 180;
+      return {
+        x: cx + r * Math.cos(angleRad),
+        y: cy + r * Math.sin(angleRad),
+      };
     }
 
     function renderRiskBars(dist) {
